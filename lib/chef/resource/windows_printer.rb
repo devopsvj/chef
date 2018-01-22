@@ -29,7 +29,7 @@ class Chef
 
       require "resolv"
 
-      property :device_id, String, name_property: true, required: true
+      property :device_id, String, name_property: true
       property :comment, String
       property :default, [true, false], default: false
       property :driver_name, String, required: true
@@ -41,6 +41,10 @@ class Chef
 
       PRINTERS_REG_KEY = 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print\Printers\\'.freeze unless defined?(PRINTERS_REG_KEY)
 
+      # does the printer exist
+      #
+      # @param [String] name the name of the printer
+      # @return [Boolean]
       def printer_exists?(name)
         printer_reg_key = PRINTERS_REG_KEY + name
         Chef::Log.debug "Checking to see if this reg key exists: '#{printer_reg_key}'"
@@ -74,6 +78,7 @@ class Chef
       end
 
       action_class do
+        # creates the printer port and then the printer
         def create_printer
           # Create the printer port first
           windows_printer_port new_resource.ipv4_address do

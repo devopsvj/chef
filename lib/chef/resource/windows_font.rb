@@ -87,12 +87,16 @@ class Chef
 
         # Parse out the schema provided to us to see if it's one we support via remote_file.
         # We do this because URI will parse C:/foo as schema 'c', which won't work with remote_file
+        #
+        # @return [Boolean]
         def remote_file_schema?(schema)
           return true if %w{http https ftp}.include?(schema)
         end
 
         # return new_resource.source if we have a proper URI specified
         # if it's a local file listed as a source return it in file:// format
+        #
+        # @return [String] path to the font
         def source_uri
           begin
             require "uri"

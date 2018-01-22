@@ -34,7 +34,7 @@ class Chef
                default: :machine
 
       action :create do
-        registry_key registry_path do
+        declare_resource(:registry_key, registry_path) do
           values [{
             name: new_resource.name,
             type: :string,
@@ -45,7 +45,7 @@ class Chef
       end
 
       action :remove do
-        registry_key registry_path do
+        declare_resource(:registry_key, registry_path) do
           values [{
             name: new_resource.name,
             type: :string,
@@ -56,6 +56,8 @@ class Chef
       end
 
       action_class do
+        # determine the full registry path based on the root property
+        # @return [String]
         def registry_path
           { machine: 'HKLM', user: 'HKCU' }[new_resource.root] + \
             '\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run'
