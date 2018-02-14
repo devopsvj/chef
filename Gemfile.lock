@@ -33,6 +33,11 @@ GIT
       thor (~> 0.18)
 
 PATH
+  remote: ../mixlib-log
+  specs:
+    mixlib-log (1.7.1)
+
+PATH
   remote: .
   specs:
     chef (14.0.57)
@@ -123,12 +128,12 @@ GEM
     addressable (2.4.0)
     appbundler (0.10.0)
       mixlib-cli (~> 1.4)
-    ast (2.3.0)
-    backports (3.11.0)
+    ast (2.4.0)
+    backports (3.11.1)
     binding_of_caller (0.8.0)
       debug_inspector (>= 0.0.1)
     builder (3.2.3)
-    byebug (9.1.0)
+    byebug (10.0.0)
     chef-vault (3.3.0)
     chef-zero (13.1.0)
       ffi-yajl (~> 2.2)
@@ -181,7 +186,7 @@ GEM
     htmlentities (4.3.4)
     httpclient (2.8.3)
     iniparse (1.4.4)
-    inspec (1.50.1)
+    inspec (1.51.18)
       addressable (~> 2.4)
       faraday (>= 0.9.0)
       hashie (~> 3.4)
@@ -216,7 +221,6 @@ GEM
     mixlib-authentication (1.4.2)
     mixlib-cli (1.7.0)
     mixlib-config (2.2.5)
-    mixlib-log (1.7.1)
     mixlib-shellout (2.3.2)
     mixlib-shellout (2.3.2-universal-mingw32)
       win32-process (~> 0.8.2)
@@ -243,15 +247,15 @@ GEM
     parallel (1.12.1)
     parser (2.4.0.2)
       ast (~> 2.3)
-    parslet (1.8.1)
+    parslet (1.8.2)
     plist (3.4.0)
     powerpack (0.1.1)
     proxifier (1.0.3)
     pry (0.11.3)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
-    pry-byebug (3.5.1)
-      byebug (~> 9.1)
+    pry-byebug (3.6.0)
+      byebug (~> 10.0)
       pry (~> 0.10)
     pry-remote (0.1.8)
       pry (~> 0.9)
@@ -402,6 +406,7 @@ DEPENDENCIES
   cheffish (~> 13)
   chefstyle!
   inspec
+  mixlib-log!
   netrc
   octokit
   ohai!

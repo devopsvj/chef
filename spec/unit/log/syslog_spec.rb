@@ -38,6 +38,7 @@ describe "Chef::Log::Syslog", :unix_only => true do
 
   it "should send message with severity info to syslog." do
     expect(syslog).to receive(:info).with("*** Chef 12.4.0.dev.0 ***")
+    puts Chef::Log.level
     Chef::Log.info("*** Chef 12.4.0.dev.0 ***")
   end
 
