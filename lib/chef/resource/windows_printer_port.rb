@@ -42,7 +42,7 @@ class Chef
         port_reg_key = PORTS_REG_KEY + name
 
         Chef::Log.debug "Checking to see if this reg key exists: '#{port_reg_key}'"
-        Registry.key_exists?(port_reg_key)
+        registry_key_exists?((port_reg_key)
       end
 
       load_current_value do |desired|

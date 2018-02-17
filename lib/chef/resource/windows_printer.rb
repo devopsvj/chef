@@ -48,7 +48,7 @@ class Chef
       def printer_exists?(name)
         printer_reg_key = PRINTERS_REG_KEY + name
         Chef::Log.debug "Checking to see if this reg key exists: '#{printer_reg_key}'"
-        Registry.key_exists?(printer_reg_key)
+        registry_key_exists?(printer_reg_key)
       end
 
       load_current_value do |desired|
