@@ -40,7 +40,7 @@ class Chef
                Integer,
                equal_to: [1024, 2048, 4096, 8192],
                validation_message: "key_length must be 1024, 2048, 4096, or 8192",
-               description: "The desired Bit Length of the generated key",
+               description: "The desired bit length of the generated key",
                default: 2048
 
       property :generator,

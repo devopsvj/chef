@@ -28,7 +28,7 @@ class Chef
       provides :openssl_rsa_key # legacy cookbook resource name
 
       introduced "14.0"
-      description "A resource for generating rsa private key files. If a valid rsa key"\
+      description "A resource for generating RSA private key files. If a valid RSA key"\
                   " file can be opened at the specified location, no new file will be"\
                   " created. If the RSA key file cannot be opened, either because it does"\
                   " not exist or because the password to the RSA key file does not match"\
@@ -43,7 +43,7 @@ class Chef
                Integer,
                equal_to: [1024, 2048, 4096, 8192],
                validation_message: "key_length must be 1024, 2048, 4096, or 8192",
-               description: "The desired Bit Length of the generated key",
+               description: "The desired bit length of the generated key",
                default: 2048
 
       property :key_pass,
