@@ -18,6 +18,7 @@
 #
 
 require "chef/dsl/platform_introspection"
+require "chef/mixin/powershell_execute"
 require "chef/mixin/powershell_out"
 require "chef/mixin/shell_out"
 
@@ -43,6 +44,7 @@ class Chef
     #
     module Universal
       include Chef::DSL::PlatformIntrospection
+      include Chef::Mixin::PowershellExecute
       include Chef::Mixin::PowershellOut
       include Chef::Mixin::ShellOut
     end
