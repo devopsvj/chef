@@ -10,7 +10,7 @@ gem "chef", path: "."
 # @todo before shipping 14.0 we need to switch this over to a gem again
 gem "ohai", git: "https://github.com/chef/ohai.git", branch: "master"
 
-gem "mixlib-log", path: "../mixlib-log"
+gem "mixlib-log", git: "https://github.com/chef/mixlib-log", branch: "tm/slog_test"
 gem "chef-config", path: File.expand_path("../chef-config", __FILE__) if File.exist?(File.expand_path("../chef-config", __FILE__))
 gem "cheffish", "~> 13" # required for rspec tests
 
