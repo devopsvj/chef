@@ -1,7 +1,7 @@
 #
 # Author:: Adam Jacob (<adam@chef.io>)
 # Author:: Christopher Walters (<cw@chef.io>)
-# Copyright:: Copyright 2008-2016, 2009-2018, Chef Software Inc.
+# Copyright:: Copyright 2008-2016, 2009-2017, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@ class Chef
     attr_accessor :run_context
 
     attr_reader :recipe_name
+    attr_reader :cookbook_name
 
     include Chef::Mixin::WhyRun
     extend Chef::Mixin::Provides
@@ -197,20 +198,6 @@ class Chef
       @requirements ||= ResourceRequirements.new(@new_resource, run_context)
     end
 
-    def description(description = "NOT_PASSED")
-      if description != "NOT_PASSED"
-        @description = description
-      end
-      @description
-    end
-
-    def introduced(introduced = "NOT_PASSED")
-      if introduced != "NOT_PASSED"
-        @introduced = introduced
-      end
-      @introduced
-    end
-
     def converge_by(descriptions, &block)
       converge_actions.add_action(descriptions, &block)
     end
@@ -263,13 +250,7 @@ class Chef
           properties_str = if new_resource.sensitive
                              specified_properties.join(", ")
                            else
-                             specified_properties.map do |property|
-                               "#{property}=" << if new_resource.class.properties[property].sensitive?
-                                                   "(suppressed sensitive property)"
-                                                 else
-                                                   new_resource.send(property).inspect
-                                                 end
-                             end.join(", ")
+                             specified_properties.map { |p| "#{p}=#{new_resource.send(p).inspect}" }.join(", ")
                            end
           Chef::Log.debug("Skipping update of #{new_resource}: has not changed any of the specified properties #{properties_str}.")
           return false
@@ -278,7 +259,7 @@ class Chef
         # Print the pretty green text and run the block
         property_size = modified.map { |p| p.size }.max
         modified.map! do |p|
-          properties_str = if new_resource.sensitive || new_resource.class.properties[p].sensitive?
+          properties_str = if new_resource.sensitive
                              "(suppressed sensitive property)"
                            else
                              "#{new_resource.send(p).inspect} (was #{current_resource.send(p).inspect})"
@@ -293,7 +274,7 @@ class Chef
         property_size = properties.map { |p| p.size }.max
         created = properties.map do |property|
           default = " (default value)" unless new_resource.property_is_set?(property)
-          properties_str = if new_resource.sensitive || new_resource.class.properties[property].sensitive?
+          properties_str = if new_resource.sensitive
                              "(suppressed sensitive property)"
                            else
                              new_resource.send(property).inspect
@@ -344,7 +325,7 @@ class Chef
           define_singleton_method(:inspect) { to_s }
           # Add a delegator for each explicit property that will get the *current* value
           # of the property by default instead of the *actual* value.
-          resource.class.properties.each_key do |name|
+          resource.class.properties.each do |name, property|
             class_eval(<<-EOM, __FILE__, __LINE__)
               def #{name}(*args, &block)
                 # If no arguments were passed, we process "get" by defaulting

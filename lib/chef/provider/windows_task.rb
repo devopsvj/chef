@@ -1,6 +1,6 @@
 #
 # Author:: Nimisha Sharad (<nimisha.sharad@msystechnologies.com>)
-# Copyright:: Copyright 2008-2018, Chef Software Inc.
+# Copyright:: Copyright 2008-2016, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,39 +75,25 @@ class Chef
 
       def action_create
         if current_resource.exists
-          Chef::Log.debug "#{new_resource} task exists"
           if !(task_need_update? || new_resource.force)
-            Chef::Log.info "#{new_resource} task does not need updating and force is not specified - nothing to do"
+            Chef::Log.info "#{new_resource} task already exists - nothing to do"
             return
           end
-          # Setting the attributes of new_resource as current_resource.
-          # This is required to handle update scenarios when the user specifies
-          # only those attributes in the recipe which require update
+          # To merge current resource and new resource attributes
           resource_attributes.each do |attribute|
             new_resource_attribute = new_resource.send(attribute)
             current_resource_attribute = current_resource.send(attribute)
-            # We accept start_day in mm/dd/yyyy format only. Hence while copying the start_day from system to new_resource.start_day,
-            # we are converting from system date format to mm/dd/yyyy
-            current_resource_attribute = convert_system_date_to_mm_dd_yyyy(current_resource_attribute) if attribute == "start_day" && current_resource_attribute != "N/A"
-            # Convert start_time into 24hr time format
-            current_resource_attribute = DateTime.parse(current_resource_attribute).strftime("%H:%M") if attribute == "start_time" && current_resource_attribute != "N/A"
             new_resource.send("#{attribute}=", current_resource_attribute ) if current_resource_attribute && new_resource_attribute.nil?
           end
         end
         basic_validation
         options = {}
         options["F"] = "" if new_resource.force || task_need_update?
-        if schedule == :none
-          options["SC"] = :once
-          options["ST"] = "00:00"
-          options["SD"] = convert_user_date_to_system_date "12/12/2012"
-        else
-          options["SC"] = schedule
-          options["ST"] = new_resource.start_time unless new_resource.start_time.nil? || new_resource.start_time == "N/A"
-          options["SD"] = convert_user_date_to_system_date new_resource.start_day unless new_resource.start_day.nil? || new_resource.start_day == "N/A"
-        end
+        options["SC"] = schedule
         options["MO"] = new_resource.frequency_modifier if frequency_modifier_allowed
         options["I"]  = new_resource.idle_time unless new_resource.idle_time.nil?
+        options["SD"] = convert_user_date_to_system_date new_resource.start_day unless new_resource.start_day.nil?
+        options["ST"] = new_resource.start_time unless new_resource.start_time.nil?
         options["TR"] = new_resource.command
         options["RU"] = new_resource.user
         options["RP"] = new_resource.password if use_password?
@@ -120,82 +106,77 @@ class Chef
         xml_options << "cwd" if new_resource.cwd
         xml_options << "random_delay" if new_resource.random_delay
         xml_options << "execution_time_limit" if new_resource.execution_time_limit
+        update_task_xml(xml_options) unless xml_options.empty?
 
-        converge_by("#{new_resource} task created") do
-          update_task_xml(xml_options) unless xml_options.empty?
-        end
+        new_resource.updated_by_last_action true
+        Chef::Log.info "#{new_resource} task created"
       end
 
       def action_run
         if current_resource.exists
-          Chef::Log.debug "#{new_resource} task exists"
           if current_resource.status == :running
             Chef::Log.info "#{new_resource} task is currently running, skipping run"
           else
-            converge_by("run scheduled task #{new_resource}") do
-              run_schtasks "RUN"
-            end
+            run_schtasks "RUN"
+            new_resource.updated_by_last_action true
+            Chef::Log.info "#{new_resource} task ran"
           end
         else
-          Chef::Log.warn "#{new_resource} task does not exist - nothing to do"
+          Chef::Log.warn "#{new_resource} task doesn't exists - nothing to do"
         end
       end
 
       def action_delete
         if current_resource.exists
-          Chef::Log.debug "#{new_resource} task exists"
-          converge_by("delete scheduled task #{new_resource}") do
-            # always need to force deletion
-            run_schtasks "DELETE", "F" => ""
-          end
+          # always need to force deletion
+          run_schtasks "DELETE", "F" => ""
+          new_resource.updated_by_last_action true
+          Chef::Log.info "#{new_resource} task deleted"
         else
-          Chef::Log.warn "#{new_resource} task does not exist - nothing to do"
+          Chef::Log.warn "#{new_resource} task doesn't exists - nothing to do"
         end
       end
 
       def action_end
         if current_resource.exists
-          Chef::Log.debug "#{new_resource} task exists"
           if current_resource.status != :running
             Chef::Log.debug "#{new_resource} is not running - nothing to do"
           else
-            converge_by("#{new_resource} task ended") do
-              run_schtasks "END"
-            end
+            run_schtasks "END"
+            new_resource.updated_by_last_action true
+            Chef::Log.info "#{new_resource} task ended"
           end
         else
-          Chef::Log.warn "#{new_resource} task does not exist - nothing to do"
+          Chef::Log.warn "#{new_resource} task doesn't exist - nothing to do"
         end
       end
 
       def action_enable
         if current_resource.exists
-          Chef::Log.debug "#{new_resource} task exists"
           if current_resource.enabled
             Chef::Log.debug "#{new_resource} already enabled - nothing to do"
           else
-            converge_by("#{new_resource} task enabled") do
-              run_schtasks "CHANGE", "ENABLE" => ""
-            end
+            run_schtasks "CHANGE", "ENABLE" => ""
+            new_resource.updated_by_last_action true
+            Chef::Log.info "#{new_resource} task enabled"
           end
         else
-          Chef::Log.fatal "#{new_resource} task does not exist - nothing to do"
+          Chef::Log.fatal "#{new_resource} task doesn't exist - nothing to do"
           raise Errno::ENOENT, "#{new_resource}: task does not exist, cannot enable"
         end
       end
 
       def action_disable
         if current_resource.exists
-          Chef::Log.info "#{new_resource} task exists"
           if current_resource.enabled
-            converge_by("#{new_resource} task disabled") do
-              run_schtasks "CHANGE", "DISABLE" => ""
-            end
+            run_schtasks "CHANGE", "DISABLE" => ""
+            new_resource.updated_by_last_action true
+            Chef::Log.info "#{new_resource} task disabled"
           else
             Chef::Log.warn "#{new_resource} already disabled - nothing to do"
           end
         else
-          Chef::Log.warn "#{new_resource} task does not exist - nothing to do"
+          Chef::Log.warn "#{new_resource} task doesn't exist - nothing to do"
         end
       end
 
@@ -204,15 +185,9 @@ class Chef
       # rubocop:disable Style/StringLiteralsInInterpolation
       def run_schtasks(task_action, options = {})
         cmd = "schtasks /#{task_action} /TN \"#{new_resource.task_name}\" "
-        options.each_key do |option|
-          unless option == "TR"
-            cmd += "/#{option} "
-            cmd += "\"#{options[option].to_s.gsub('"', "\\\"")}\" " unless options[option] == ""
-          end
-        end
-        # Appending Task Run [TR] option at the end since appending causing sometimes to append other options in option["TR"] value
-        if options["TR"]
-          cmd += "/TR \"#{options["TR"]} \" " unless task_action == "DELETE"
+        options.keys.each do |option|
+          cmd += "/#{option} "
+          cmd += "\"#{options[option].to_s.gsub('"', "\\\"")}\" " unless options[option] == ""
         end
         Chef::Log.debug("running: ")
         Chef::Log.debug("    #{cmd}")
@@ -229,9 +204,10 @@ class Chef
             current_resource.frequency_modifier != new_resource.frequency_modifier ||
             current_resource.frequency != new_resource.frequency ||
             current_resource.idle_time != new_resource.idle_time ||
-            random_delay_updated? || execution_time_limit_updated? ||
-            (new_resource.start_day && new_resource.start_day != "N/A" && start_day_updated?) ||
-            (new_resource.start_time && new_resource.start_time != "N/A" && start_time_updated?)
+            current_resource.random_delay != new_resource.random_delay ||
+            !new_resource.execution_time_limit.include?(current_resource.execution_time_limit) ||
+            (new_resource.start_day && start_day_updated?) ||
+            (new_resource.start_time && start_time_updated?)
         begin
           return true if new_resource.day.to_s.casecmp(current_resource.day.to_s) != 0 ||
               new_resource.months.to_s.casecmp(current_resource.months.to_s) != 0
@@ -242,40 +218,9 @@ class Chef
         false
       end
 
-      # Comparing random_delay values using ISO8601::Duration object Ref: https://github.com/arnau/ISO8601/blob/master/lib/iso8601/duration.rb#L18-L23
-      # di = ISO8601::Duration.new(65707200)
-      # ds = ISO8601::Duration.new('P65707200S')
-      # dp = ISO8601::Duration.new('P2Y1MT2H')
-      # di == dp # => true
-      # di == ds # => true
-      def random_delay_updated?
-        if new_resource.random_delay.nil?
-          false
-        elsif current_resource.random_delay.nil? && new_resource.random_delay == "PT0S" # when user sets random_dealy to 0 sec
-          false
-        elsif current_resource.random_delay.nil?
-          true
-        else
-          ISO8601::Duration.new(current_resource.random_delay) != ISO8601::Duration.new(new_resource.random_delay)
-        end
-      end
-
-      # Comparing execution_time_limit values using Ref: https://github.com/arnau/ISO8601/blob/master/lib/iso8601/duration.rb#L18-L23
-      def execution_time_limit_updated?
-        if new_resource.execution_time_limit.nil?
-          false
-        elsif current_resource.execution_time_limit.nil? && new_resource.execution_time_limit == "PT0S" # when user sets random_dealy to 0 sec
-          false
-        elsif current_resource.execution_time_limit.nil?
-          true
-        else
-          ISO8601::Duration.new(current_resource.execution_time_limit) != ISO8601::Duration.new(new_resource.execution_time_limit)
-        end
-      end
-
       def start_day_updated?
         current_day = DateTime.strptime(current_resource.start_day, convert_system_date_format_to_ruby_date_format)
-        new_day = parse_day(new_resource.start_day)
+        new_day = DateTime.parse(new_resource.start_day)
         current_day != new_day
       end
 
@@ -285,7 +230,7 @@ class Chef
       end
 
       def convert_user_date_to_system_date(date_in_string)
-        parse_day(date_in_string).strftime(convert_system_date_format_to_ruby_long_date)
+        DateTime.parse(date_in_string).strftime(convert_system_date_format_to_ruby_long_date)
       end
 
       def convert_system_date_format_to_ruby_long_date
@@ -323,14 +268,6 @@ class Chef
         @system_short_date_format
       end
 
-      def convert_system_date_to_mm_dd_yyyy(system_date)
-        system_date_format = convert_system_date_format_to_ruby_date_format
-        unless system_date_format == "%m/%d/%Y"
-          system_date = Date.strptime(system_date, system_date_format).strftime("%m/%d/%Y")
-        end
-        system_date
-      end
-
       def update_task_xml(options = [])
         # random_delay xml element is different for different frequencies
         random_delay_xml_element = {
@@ -340,7 +277,6 @@ class Chef
           :daily => "Triggers/CalendarTrigger/RandomDelay",
           :weekly => "Triggers/CalendarTrigger/RandomDelay",
           :monthly => "Triggers/CalendarTrigger/RandomDelay",
-          :none => "Triggers",
         }
 
         xml_element_mapping = {
@@ -361,19 +297,13 @@ class Chef
 
         doc = REXML::Document.new(xml_cmd.stdout)
 
-        if new_resource.frequency == :none
-          doc.root.elements.delete(xml_element_mapping["random_delay"])
-          trigger_element = REXML::Element.new(xml_element_mapping["random_delay"])
-          doc.root.elements.add(trigger_element)
-        end
-
         options.each do |option|
-          Chef::Log.debug "Removing former #{option} if any"
+          Chef::Log.debug 'Removing former #{option} if any'
           doc.root.elements.delete(xml_element_mapping[option])
           option_value = new_resource.send("#{option}")
 
           if option_value
-            Chef::Log.debug "Setting #{option} as #{option_value}"
+            Chef::Log.debug "Setting #option as #option_value"
             split_xml_path = xml_element_mapping[option].split("/") # eg. if xml_element_mapping[option] = "Actions/Exec/WorkingDirectory"
             element_name = split_xml_path.last # element_name = "WorkingDirectory"
             cwd_element = REXML::Element.new(element_name)
@@ -395,6 +325,7 @@ class Chef
           options["RP"] = new_resource.password if new_resource.password
           options["IT"] = "" if new_resource.interactive_enabled
           options["XML"] = temp_task_file
+
           run_schtasks("DELETE", "F" => "")
           run_schtasks("CREATE", options)
         ensure
@@ -479,8 +410,7 @@ class Chef
 
         task[:idle_time] = root.elements["Settings/IdleSettings/Duration"].text if root.elements["Settings/IdleSettings/Duration"] && task[:on_idle]
 
-        task[:none] = true if root.elements["Triggers/"] && root.elements["Triggers/"].entries.empty?
-        task[:once] = true if !(task[:repetition_interval] || task[:schedule_by_day] || task[:schedule_by_week] || task[:schedule_by_month] || task[:on_logon] || task[:onstart] || task[:on_idle] || task[:none])
+        task[:once] = true if !(task[:repetition_interval] || task[:schedule_by_day] || task[:schedule_by_week] || task[:schedule_by_month] || task[:on_logon] || task[:onstart] || task[:on_idle])
         task[:execution_time_limit] = root.elements["Settings/ExecutionTimeLimit"].text if root.elements["Settings/ExecutionTimeLimit"] #by default PT72H
         task[:random_delay] = root.elements["Triggers/TimeTrigger/RandomDelay"].text if root.elements["Triggers/TimeTrigger/RandomDelay"]
         task[:random_delay] = root.elements["Triggers/CalendarTrigger/RandomDelay"].text if root.elements["Triggers/CalendarTrigger/RandomDelay"]
@@ -551,16 +481,11 @@ class Chef
         current_resource.frequency(:onstart) if task_hash[:onstart]
         current_resource.frequency(:on_idle) if task_hash[:on_idle]
         current_resource.frequency(:once) if task_hash[:once]
-        current_resource.frequency(:none) if task_hash[:none]
       end
 
       def set_current_idle_time(idle_time)
         duration = ISO8601::Duration.new(idle_time)
         current_resource.idle_time(duration.minutes.atom.to_i)
-      end
-
-      def parse_day(str)
-        Date.strptime(str, "%m/%d/%Y")
       end
 
     end

@@ -1,30 +1,5 @@
 require "support/shared/integration/integration_helper"
 
-class NoActionJackson < Chef::Resource
-  use_automatic_resource_name
-
-  def foo(value = nil)
-    @foo = value if value
-    @foo
-  end
-
-  class <<self
-    attr_accessor :action_was
-  end
-end
-
-class WeirdActionJackson < Chef::Resource
-  use_automatic_resource_name
-
-  class <<self
-    attr_accessor :action_was
-  end
-
-  action :Straße do
-    WeirdActionJackson.action_was = action
-  end
-end
-
 # Houses any classes we declare
 module ResourceActionSpec
 
@@ -254,7 +229,7 @@ module ResourceActionSpec
       end
 
       context "And 'action_jackgrandson' inheriting from ActionJackson and changing nothing" do
-        before(:each) do
+        before(:context) do
           class ActionJackgrandson < ActionJackson
             use_automatic_resource_name
           end
@@ -358,6 +333,19 @@ module ResourceActionSpec
     end
 
     context "With a resource with no actions" do
+      class NoActionJackson < Chef::Resource
+        use_automatic_resource_name
+
+        def foo(value = nil)
+          @foo = value if value
+          @foo
+        end
+
+        class <<self
+          attr_accessor :action_was
+        end
+      end
+
       it "the default action is :nothing" do
         converge do
           no_action_jackson "hi" do
@@ -370,6 +358,18 @@ module ResourceActionSpec
     end
 
     context "With a resource with a UTF-8 action" do
+      class WeirdActionJackson < Chef::Resource
+        use_automatic_resource_name
+
+        class <<self
+          attr_accessor :action_was
+        end
+
+        action :Straße do
+          WeirdActionJackson.action_was = action
+        end
+      end
+
       it "Running the action works" do
         expect_recipe do
           weird_action_jackson "hi"
@@ -509,7 +509,7 @@ module ResourceActionSpec
         Chef::Config[:treat_deprecation_warnings_as_errors] = false
         expect_converge do
           has_property_named_template "hi"
-        end.to raise_error(/Property `template` of `has_property_named_template\[hi\]` was incorrectly passed a block. Possible property-resource collision. To call a resource named `template` either rename the property or else use `declare_resource\(:template, ...\)`/)
+        end.to raise_error(/Property `template` of `has_property_named_template\[hi\]` was incorrectly passed a block.  Possible property-resource collision.  To call a resource named `template` either rename the property or else use `declare_resource\(:template, ...\)`/)
       end
     end
 

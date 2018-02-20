@@ -40,7 +40,7 @@ describe Chef::Provider::WindowsTask do
       :LastRunTime => "3/30/2017 2:27:00 PM",
       :LastResult => "1",
       :Author => "Administrator",
-      :TaskToRun => "chef-client -L C:\\tmp\\",
+      :TaskToRun => "chef-client",
       :StartIn => "N/A",
       :Comment => "N/A",
       :ScheduledTaskState => "Enabled",
@@ -91,7 +91,7 @@ describe Chef::Provider::WindowsTask do
       allow(provider).to receive(:load_task_hash).and_return(task_hash)
       current_resource = provider.load_current_resource
       expect(current_resource.exists).to be(true)
-      expect(current_resource.command).to eq("chef-client -L C:\\tmp\\")
+      expect(current_resource.command).to eq("chef-client")
       expect(current_resource.user).to eq("SYSTEM")
       expect(current_resource.run_level).to eq(:highest)
       expect(current_resource.frequency).to eq(:minute)
@@ -108,49 +108,6 @@ describe Chef::Provider::WindowsTask do
       allow(provider).to receive(:task_need_update?).and_return(false)
       provider.run_action(:create)
       expect(new_resource).not_to be_updated_by_last_action
-    end
-
-    it "sets the start_time in 24hr format while updating an existing task" do
-      # task_hash has start_time = "1:12:00 PM"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      allow(provider).to receive(:task_need_update?).and_return(true)
-      allow(provider).to receive(:convert_system_date_to_mm_dd_yyyy).and_return("03/30/2017")
-      allow(provider).to receive(:run_schtasks)
-      provider.run_action(:create)
-      # start_time gets set in 24hr format for new_resource
-      expect(new_resource.start_time).to eq("13:12")
-      expect(new_resource).to be_updated_by_last_action
-    end
-
-    it "sets the start_day in mm/dd/yyyy format while updating an existing task" do
-      # start_day in yyyy-MM-dd format
-      task_hash[:StartDate] = "2017-03-30"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      current_resource = provider.load_current_resource
-      allow(provider).to receive(:task_need_update?).and_return(true)
-      allow(provider).to receive(:convert_system_date_format_to_ruby_date_format).and_return("%Y-%m-%d")
-      allow(provider).to receive(:run_schtasks)
-      provider.run_action(:create)
-      # start_day gets set in mm/dd/yyyy format for new_resource
-      expect(new_resource.start_day).to eq("03/30/2017")
-      expect(new_resource).to be_updated_by_last_action
-    end
-
-    context "when start_day and start_time are N/A for frequency :on_logon" do
-      it "doesn't update the start_day and start_time of new_resource" do
-        task_hash[:on_logon] = true
-        task_hash[:StartDate] = "N/A"
-        task_hash[:StartTime] = "N/A"
-        allow(provider).to receive(:load_task_hash).and_return(task_hash)
-        current_resource = provider.load_current_resource
-        allow(provider).to receive(:task_need_update?).and_return(true)
-        allow(provider).to receive(:run_schtasks)
-        expect(provider).not_to receive(:convert_system_date_to_mm_dd_yyyy)
-        expect(DateTime).not_to receive(:parse)
-        expect(new_resource.start_day).to eq(nil)
-        expect(new_resource.start_time).to eq(nil)
-      end
     end
 
     context "when task is not existing" do
@@ -182,17 +139,6 @@ describe Chef::Provider::WindowsTask do
         allow(provider).to receive(:task_need_update?).and_return(true)
         allow(provider).to receive(:basic_validation).and_return(true)
         expect(provider).to receive(:run_schtasks).with("CREATE", { "F" => "", "SC" => :hourly, "MO" => 1, "TR" => nil, "RU" => "SYSTEM" })
-        expect(provider).to receive(:update_task_xml)
-        provider.run_action(:create)
-        expect(new_resource).to be_updated_by_last_action
-      end
-
-      it "updates the task XML if frequency is set as `:none`" do
-        new_resource.frequency :none
-        new_resource.random_delay ""
-        allow(provider).to receive(:task_need_update?).and_return(true)
-        allow(provider).to receive(:basic_validation).and_return(true)
-        allow(provider).to receive(:run_schtasks).and_return("CREATE", { "F" => "", "SC" => :once, "ST" => "00:00", "SD" => "12/12/2012", "TR" => nil, "RU" => "SYSTEM" })
         expect(provider).to receive(:update_task_xml)
         provider.run_action(:create)
         expect(new_resource).to be_updated_by_last_action
@@ -328,7 +274,7 @@ describe Chef::Provider::WindowsTask do
     before do
       @task_action = "CREATE"
       @options = { "F" => "", "SC" => :minute, "MO" => 15, "TR" => "chef-client", "RU" => "SYSTEM", "RL" => "HIGHEST" }
-      @cmd = "schtasks /CREATE /TN \"sample_task\" /F /SC \"minute\" /MO \"15\" /RU \"SYSTEM\" /RL \"HIGHEST\" /TR \"chef-client \" "
+      @cmd = "schtasks /CREATE /TN \"sample_task\" /F /SC \"minute\" /MO \"15\" /TR \"chef-client\" /RU \"SYSTEM\" /RL \"HIGHEST\" "
     end
 
     it "forms the command properly from the given options" do
@@ -379,13 +325,13 @@ describe Chef::Provider::WindowsTask do
         allow(provider).to receive(:get_system_short_date_format).and_return("MM/dd/yyyy")
         provider.load_current_resource
 
-        new_resource.command "chef-client -L C:\\tmp\\"
+        new_resource.command "chef-client"
         new_resource.run_level :highest
         new_resource.frequency :minute
         new_resource.frequency_modifier 15
         new_resource.user "SYSTEM"
         new_resource.execution_time_limit "PT72H"
-        new_resource.start_day "03/30/2017"
+        new_resource.start_day "30-Mar-2017"
         new_resource.start_time "13:12"
       end
 
@@ -422,13 +368,6 @@ describe Chef::Provider::WindowsTask do
           expect(provider.send(:task_need_update?)).to be(true)
         end
       end
-
-      context "when command updated" do
-        it "return true" do
-          new_resource.command "chef-client"
-          expect(provider.send(:task_need_update?)).to be(true)
-        end
-      end
     end
   end
 
@@ -444,7 +383,7 @@ describe Chef::Provider::WindowsTask do
       new_resource.frequency_modifier 15
       new_resource.user "SYSTEM"
       new_resource.execution_time_limit "PT72H"
-      new_resource.start_day "03/30/2017"
+      new_resource.start_day "30-Mar-2017"
       new_resource.start_time "13:12"
     end
     context "when start_day not changed" do
@@ -490,9 +429,9 @@ describe Chef::Provider::WindowsTask do
   end
 
   describe "#convert_user_date_to_system_date" do
-    it "when current resource start date is '05/30/2017' then returns '30/05/2017'" do
-      allow(provider).to receive(:get_system_short_date_format).and_return("dd/MM/yyyy")
-      expect(provider.send(:convert_user_date_to_system_date, "05/30/2017")).to eq("30/05/2017")
+    it "when current resource start date is '30-May-2017' then returns '05/30/2017'" do
+      allow(provider).to receive(:get_system_short_date_format).and_return("MM/dd/yyyy")
+      expect(provider.send(:convert_user_date_to_system_date, "30-May-2017")).to eq("05/30/2017")
     end
   end
 
@@ -568,18 +507,6 @@ describe Chef::Provider::WindowsTask do
       expect(provider).to receive(:run_schtasks).twice
       output = provider.send(:update_task_xml, ["random_delay"])
     end
-
-    it "updates the task XML if frequency is set as `:none`" do
-      new_resource.frequency :none
-      new_resource.random_delay ""
-      shell_out_obj = double("xml", :exitstatus => 0, :stdout => task_xml)
-      allow(provider).to receive(:powershell_out).and_return(shell_out_obj)
-      expect(::File).to receive(:delete)
-      expect(::File).to receive(:join)
-      expect(::File).to receive(:open)
-      expect(provider).to receive(:run_schtasks).twice
-      output = provider.send(:update_task_xml, ["random_delay"])
-    end
   end
 
   describe "#load_task_hash" do
@@ -613,105 +540,6 @@ describe Chef::Provider::WindowsTask do
     it "returns false for frequency :once" do
       new_resource.frequency :once
       expect(provider.send(:frequency_modifier_allowed)).to be(false)
-    end
-
-    it "returns false for frequency :none" do
-      new_resource.frequency :none
-      expect(provider.send(:frequency_modifier_allowed)).to be(false)
-    end
-  end
-
-  # In windows_task resource sec_to_dur method converts seconds to duration in format 60 == 'PT60S'
-  # random_delay_updated? method use the value return by sec_to_dur as input for comparison for new_resource.random_delay mocking the same here
-  describe "#random_delay_updated?" do
-    before do
-      new_resource.command "chef-client"
-      new_resource.run_level :highest
-      new_resource.frequency :minute
-      new_resource.frequency_modifier 15
-      new_resource.user "SYSTEM"
-    end
-
-    it "returns false if current_resource.random_delay = nil & random_delay is set to '0' seconds" do
-      task_hash[:random_delay] = nil
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.random_delay = "PT0S"
-      expect(provider.send(:random_delay_updated?)).to be(false)
-    end
-
-    it "returns false if current_resource.random_delay = 'P7D' & random_delay is set to '604800' seconds " do
-      task_hash[:random_delay] = "P7D"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.random_delay = "PT604800S"
-      expect(provider.send(:random_delay_updated?)).to be(false)
-    end
-
-    it "returns false if current_resource.random_delay = 'P7DT1S' & random_delay is set to '604801' seconds" do
-      task_hash[:random_delay] = "P7DT1S"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.random_delay = "PT604801S"
-      expect(provider.send(:random_delay_updated?)).to be(false)
-    end
-
-    it "returns true if current_resource.random_delay = 'PT1S' & random_delay is set to '3600' seconds" do
-      task_hash[:random_delay] = "PT1S"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.random_delay = "PT3600S"
-      expect(provider.send(:random_delay_updated?)).to be(true)
-    end
-
-    it "returns false if current_resource.random_delay = 'P2Y1MT2H' & random_delay is set to '65707200' seconds" do
-      task_hash[:random_delay] = "P2Y1MT2H"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.random_delay = "PT65707200S"
-      expect(provider.send(:random_delay_updated?)).to be(false)
-    end
-  end
-
-  describe "#execution_time_limit_updated?" do
-    before do
-      new_resource.command "chef-client"
-      new_resource.run_level :highest
-      new_resource.frequency :minute
-      new_resource.frequency_modifier 15
-      new_resource.user "SYSTEM"
-    end
-
-    it "returns false if current_resource.execution_time_limit = 'P7D' & execution_time_limit is set to 604800 seconds " do
-      task_hash[:execution_time_limit] = "P7D"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.execution_time_limit = "PT604800S"
-      expect(provider.send(:execution_time_limit_updated?)).to be(false)
-    end
-
-    it "returns false if current_resource.execution_time_limit = 'P7DT1S' & execution_time_limit is set to 604801 seconds" do
-      task_hash[:execution_time_limit] = "P7DT1S"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.execution_time_limit = "PT604801S"
-      expect(provider.send(:execution_time_limit_updated?)).to be(false)
-    end
-
-    it "returns true if current_resource.execution_time_limit = 'PT1S' & execution_time_limit is set to '3600' seconds" do
-      task_hash[:execution_time_limit] = "PT1S"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.execution_time_limit = "PT3600S"
-      expect(provider.send(:execution_time_limit_updated?)).to be(true)
-    end
-
-    it "returns false if current_resource.execution_time_limit = 'P2Y1MT2H' & execution_time_limit is set to '65707200' seconds" do
-      task_hash[:execution_time_limit] = "P2Y1MT2H"
-      allow(provider).to receive(:load_task_hash).and_return(task_hash)
-      provider.load_current_resource
-      new_resource.execution_time_limit = "PT65707200S"
-      expect(provider.send(:execution_time_limit_updated?)).to be(false)
     end
   end
 end

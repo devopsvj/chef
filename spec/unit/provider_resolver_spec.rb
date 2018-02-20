@@ -558,7 +558,10 @@ describe Chef::ProviderResolver do
         chef_gem:               [ Chef::Resource::ChefGem, Chef::Provider::Package::Rubygems ],
         cookbook_file:          [ Chef::Resource::CookbookFile, Chef::Provider::CookbookFile ],
         csh:                    [ Chef::Resource::Csh, Chef::Provider::Script ],
+        deploy:                 [ Chef::Resource::Deploy, Chef::Provider::Deploy::Timestamped ],
+        deploy_revision:        [ Chef::Resource::DeployRevision, Chef::Provider::Deploy::Revision ],
         directory:              [ Chef::Resource::Directory, Chef::Provider::Directory ],
+        erl_call:               [ Chef::Resource::ErlCall, Chef::Provider::ErlCall ],
         execute:                [ Chef::Resource::Execute, Chef::Provider::Execute ],
         file:                   [ Chef::Resource::File, Chef::Provider::File ],
         gem_package:            [ Chef::Resource::GemPackage, Chef::Provider::Package::Rubygems ],
@@ -582,6 +585,7 @@ describe Chef::ProviderResolver do
         script:                 [ Chef::Resource::Script, Chef::Provider::Script ],
         subversion:             [ Chef::Resource::Subversion, Chef::Provider::Subversion ],
         template:               [ Chef::Resource::Template, Chef::Provider::Template ],
+        timestamped_deploy:     [ Chef::Resource::TimestampedDeploy, Chef::Provider::Deploy::Timestamped ],
         aix_user:               [ Chef::Resource::User::AixUser, Chef::Provider::User::Aix ],
         dscl_user:              [ Chef::Resource::User::DsclUser, Chef::Provider::User::Dscl ],
         linux_user:             [ Chef::Resource::User::LinuxUser, Chef::Provider::User::Linux ],
@@ -704,21 +708,18 @@ describe Chef::ProviderResolver do
 
           "rhel" => {
     #        service: [ Chef::Resource::SystemdService, Chef::Provider::Service::Systemd ],
-            package:  [ Chef::Resource::DnfPackage, Chef::Provider::Package::Dnf ],
+            package:  [ Chef::Resource::YumPackage, Chef::Provider::Package::Yum ],
             ifconfig: [ Chef::Resource::Ifconfig, Chef::Provider::Ifconfig::Redhat ],
 
             %w{amazon xcp xenserver ibm_powerkvm cloudlinux parallels} => {
               "3.1.4" => {
-                package:  [ Chef::Resource::YumPackage, Chef::Provider::Package::Yum ],
     #            service: [ Chef::Resource::RedhatService, Chef::Provider::Service::Redhat ],
               },
             },
             %w{redhat centos scientific oracle} => {
               "7.0" => {
-                package:  [ Chef::Resource::YumPackage, Chef::Provider::Package::Yum ],
               },
               "6.0" => {
-                package:  [ Chef::Resource::YumPackage, Chef::Provider::Package::Yum ],
     #            service: [ Chef::Resource::RedhatService, Chef::Provider::Service::Redhat ],
               },
             },
@@ -762,7 +763,7 @@ describe Chef::ProviderResolver do
         "windows" => {
           batch:             [ Chef::Resource::Batch, Chef::Provider::Batch ],
           dsc_script:        [ Chef::Resource::DscScript, Chef::Provider::DscScript ],
-          windows_env:       [ Chef::Resource::WindowsEnv, Chef::Provider::WindowsEnv ],
+          env:               [ Chef::Resource::Env, Chef::Provider::Env::Windows ],
           group:             [ Chef::Resource::Group, Chef::Provider::Group::Windows ],
           mount:             [ Chef::Resource::Mount, Chef::Provider::Mount::Windows ],
           package:           [ Chef::Resource::WindowsPackage, Chef::Provider::Package::Windows ],

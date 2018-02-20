@@ -100,11 +100,15 @@ class Chef
 
         # @see Chef::Provider::Package#package_locked
         def package_locked(name, version)
+          islocked = false
           locked = shell_out_with_timeout!("yum versionlock")
-          locked_packages = locked.stdout.each_line.map do |line|
-            line.sub(/-[^-]*-[^-]*$/, "").split(":").last.strip
+          locked.stdout.each_line do |line|
+            line_package = line.sub(/-[^-]*-[^-]*$/, "").split(":").last.strip
+            if line_package == name
+              islocked = true
+            end
           end
-          name.all? { |n| locked_packages.include? n }
+          islocked
         end
 
         #
@@ -152,6 +156,26 @@ class Chef
           yum_command("-d0 -e0 -y#{expand_options(new_resource.options)} versionlock delete #{unlock_str}")
         end
 
+        # Keep upgrades from trying to install an older candidate version. Can happen when a new
+        # version is installed then removed from a repository, now the older available version
+        # shows up as a viable install candidate.
+        #
+        # Can be done in upgrade_package but an upgraded from->to log message slips out
+        #
+        # Hacky - better overall solution? Custom compare in Package provider?
+        def action_upgrade
+          # Could be uninstalled or have no candidate
+          if current_resource.version.nil? || !candidate_version_array.any?
+            super
+          elsif candidate_version_array.zip(current_version_array).any? do |c, i|
+                  RPMVersion.parse(c) > RPMVersion.parse(i)
+                end
+            super
+          else
+            Chef::Log.debug("#{new_resource} is at the latest version - nothing to do")
+          end
+        end
+
         private
 
         #
@@ -164,10 +188,6 @@ class Chef
               yum_binary = new_resource.yum_binary if new_resource.is_a?(Chef::Resource::YumPackage)
               yum_binary ||= ::File.exist?("/usr/bin/yum-deprecated") ? "yum-deprecated" : "yum"
             end
-        end
-
-        def version_compare(v1, v2)
-          RPMVersion.parse(v1) <=> RPMVersion.parse(v2)
         end
 
         # Enable or disable YumCache extra_repo_control

@@ -21,24 +21,24 @@ require "chef/mixin/uris"
 
 class Chef
   class Resource
-    # Use the cab_package resource to install or remove Microsoft Windows cabinet (.cab) packages.
-    #
-    # @since 12.15
     class CabPackage < Chef::Resource::Package
       include Chef::Mixin::Uris
 
-      resource_name :cab_package
       provides :cab_package, os: "windows"
 
       allowed_actions :install, :remove
+
+      def initialize(name, run_context = nil)
+        super
+        @resource_name = :cab_package
+      end
 
       property  :source, String,
                 coerce: (proc do |s|
                   unless s.nil?
                     uri_scheme?(s) ? s : Chef::Util::PathHelper.canonical_path(s, false)
                   end
-                end),
-                default: lazy { |r| r.package_name }
+                end)
     end
   end
 end

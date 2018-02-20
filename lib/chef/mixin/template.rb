@@ -23,6 +23,7 @@ class Chef
   module Mixin
     module Template
 
+      # == ChefContext
       # ChefContext was previously used to mix behavior into Erubis::Context so
       # that it would be available to templates. This behavior has now moved to
       # TemplateContext, but this module is still mixed in to the
@@ -31,6 +32,7 @@ class Chef
       module ChefContext
       end
 
+      # == TemplateContext
       # TemplateContext is the base context class for all templates in Chef. It
       # defines user-facing extensions to the base Erubis::Context to provide
       # enhanced features. Individual instances of TemplateContext can be
@@ -70,7 +72,7 @@ class Chef
         # @return [String] recipe path
         attr_reader :recipe_path
 
-        # line in the recipe containing the template resource, e.g.:
+        # line in the recipe containing the template reosurce, e.g.:
         #   2
         #
         # @return [String] recipe line

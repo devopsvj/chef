@@ -19,7 +19,6 @@
 
 class Chef
   class Resource
-    # Use the group resource to manage a local group.
     class Group < Chef::Resource
 
       identity_attr :group_name

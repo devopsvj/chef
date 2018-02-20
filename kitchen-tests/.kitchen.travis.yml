@@ -29,86 +29,102 @@ verifier:
   format: progress
 
 platforms:
-- name: amazonlinux
+- name: debian-7
   driver:
-    image: dokken/amazonlinux
+    image: debian:7
     pid_one_command: /sbin/init
     intermediate_instructions:
-      - RUN yum -y install sudo
-      - RUN sed -i -e "s/Defaults.*requiretty.*/Defaults    !requiretty/g" /etc/sudoers
+      - RUN /usr/bin/apt-get update
+      - RUN /usr/bin/apt-get -y install zlib1g-dev sudo net-tools wget ca-certificates
+      - RUN /bin/mkdir /var/run/sshd
 
 - name: debian-8
   driver:
-    image: dokken/debian-8
+    image: debian:8
     pid_one_command: /bin/systemd
     intermediate_instructions:
       - RUN /usr/bin/apt-get update
-      - RUN /usr/bin/apt-get -y install sudo
+      - RUN /usr/bin/apt-get -y install zlib1g-dev sudo net-tools wget ca-certificates
 
-- name: debian-9
+- name: centos-5
   driver:
-    image: dokken/debian-9
-    pid_one_command: /bin/systemd
+    image: centos:5
+    platform: rhel
+    run_command: /sbin/init
     intermediate_instructions:
-      - RUN /usr/bin/apt-get update
-      - RUN /usr/bin/apt-get -y install sudo
+      - RUN yum clean all
+      - RUN yum install -y which initscripts net-tools sudo wget
+      - RUN sed -i -e "s/Defaults.*requiretty.*/Defaults    !requiretty/g" /etc/sudoers
 
 - name: centos-6
   driver:
-    image: dokken/centos-6
-    pid_one_command: /sbin/init
+    image: centos:6
+    run_command: /sbin/init
     intermediate_instructions:
-      - RUN yum -y install sudo
+      - RUN yum clean all
+      - RUN yum -y install which initscripts net-tools sudo wget
       - RUN sed -i -e "s/Defaults.*requiretty.*/Defaults    !requiretty/g" /etc/sudoers
+  attributes:
+    chef_client:
+      init_style: init
 
 - name: centos-7
   driver:
-    image: dokken/centos-7
+    image: centos:7
     pid_one_command: /usr/lib/systemd/systemd
     intermediate_instructions:
-      - RUN yum -y install sudo
+      - RUN yum clean all
+      - RUN yum -y install which initscripts net-tools sudo wget
       - RUN sed -i -e "s/Defaults.*requiretty.*/Defaults    !requiretty/g" /etc/sudoers
 
 - name: fedora-latest
   driver:
-    image: dokken/fedora-latest
+    image: fedora:latest
     pid_one_command: /usr/lib/systemd/systemd
     intermediate_instructions:
-      - RUN dnf -y install sudo
+      - RUN dnf -y install yum which initscripts rpm-build zlib-devel net-tools sudo wget
+      - RUN yum makecache
       - RUN sed -i -e "s/Defaults.*requiretty.*/Defaults    !requiretty/g" /etc/sudoers
 
 - name: ubuntu-14.04
   driver:
-    image: dokken/ubuntu-14.04
+    image: ubuntu-upstart:14.04
     pid_one_command: /sbin/init
     intermediate_instructions:
       - RUN /usr/bin/apt-get update
-      - RUN /usr/bin/apt-get -y install sudo
+      - RUN /usr/bin/apt-get -y install zlib1g-dev sudo net-tools wget ca-certificates
 
 - name: ubuntu-16.04
   driver:
-    image: dokken/ubuntu-16.04
+    image: ubuntu:16.04
     pid_one_command: /bin/systemd
     intermediate_instructions:
       - RUN /usr/bin/apt-get update
-      - RUN /usr/bin/apt-get -y install sudo
+      - RUN /usr/bin/apt-get -y install zlib1g-dev sudo net-tools wget ca-certificates
 
-- name: opensuse-leap
+- name: opensuse-13.2
   driver:
-    image: dokken/opensuse-leap
+    image: opensuse:13.2
     pid_one_command: /bin/systemd
     intermediate_instructions:
-      - RUN /usr/bin/zypper install -y sudo
+      - RUN zypper refresh
+
+- name: amazonlinux
+  driver:
+    image: amazonlinux:latest
+    pid_one_command: /sbin/init
+    intermediate_instructions:
+      - RUN yum clean all
+      - RUN yum -y install which initscripts net-tools sudo wget
+      - RUN sed -i -e "s/Defaults.*requiretty.*/Defaults    !requiretty/g" /etc/sudoers
 
 suites:
-  - name: base
+  - name: webapp
     run_list:
       - recipe[base::default]
   - name: awesome_customers_ubuntu
-    includes: [ubuntu-14.04, ubuntu-16.04]
     run_list:
       - recipe[awesome_customers_ubuntu_wrapper::default]
   - name: awesome_customers_rhel
-    includes: [centos-6, centos-7]
     run_list:
       - recipe[awesome_customers_rhel_wrapper::default]

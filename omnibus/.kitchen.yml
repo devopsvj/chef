@@ -39,6 +39,10 @@ platforms:
     run_list: yum-epel::default
   - name: centos-7.2
     run_list: yum-epel::default
+  - name: debian-6.0.8
+    run_list: apt::default
+  - name: debian-7.9
+    run_list: apt::default
   - name: debian-8.2
     run_list: apt::default
   - name: freebsd-9.3
@@ -69,8 +73,6 @@ platforms:
   #
   #   KITCHEN_LOCAL_YAML=.kitchen.vmware.yml kitchen converge chefdk-macosx-109
   #
-
-  # OSX
   <% %w(
     10.9
     10.10
@@ -84,15 +86,9 @@ platforms:
       - ['../../omnibus', '/Users/vagrant/omnibus']
       - ['../../omnibus-software', '/Users/vagrant/omnibus-software']
   <% end %>
-
-  <% %w(
-    10-enterprise
-    server-2012r2-standard
-  ).each do |win_version| %>
-  # Windows 64-bit
-  - name: windows-<%= win_version %>
+  - name: windows-2012r2-standard
     driver:
-      box: chef/windows-<%= win_version %> # private
+      box: chef/windows-server-2012r2-standard # private
       synced_folders:
       # We have to mount this repos enclosing folder as the Omnibus build
       # gets cranky if the mounted Chef source folder is a symlink. This
@@ -106,14 +102,16 @@ platforms:
           build_user_group:    Administrators
           build_user_password: vagrant
       chef_omnibus_root: /opscode/angrychef
-
-  # Windows 32-bit
   # By adding an `i386` to the name the Omnibus cookbook's `load-omnibus-toolchain.bat`
   # will load the 32-bit version of the MinGW toolchain.
-  - name: windows-<%= win_version %>-i386
+  - name: windows-2012r2-standard-i386
     driver:
-      box: chef/windows-<%= win_version %> # private
+      box: chef/windows-server-2012r2-standard # private
       synced_folders:
+      # We have to mount this repos enclosing folder as the Omnibus build
+      # gets cranky if the mounted ChefDK source folder is a symlink. This
+      # mounts at `C:\vagrant\code` and the ChefDK source folder is available
+      # at `C:\vagrant\code\chef-dk`
       - ['../..', '/vagrant/code']
     provisioner:
       attributes:
@@ -122,7 +120,6 @@ platforms:
           build_user_group:    Administrators
           build_user_password: vagrant
       chef_omnibus_root: /opscode/angrychef
-  <% end %>
 
 suites:
   # - name: angrychef

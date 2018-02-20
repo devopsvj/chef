@@ -34,15 +34,15 @@ end
 describe Chef::Resource::ChefGem, "gem_binary" do
   let(:resource) { Chef::Resource::ChefGem.new("foo") }
 
-  it "raises an exception when gem_binary is set" do
+  it "should raise an exception when gem_binary is set" do
     expect { resource.gem_binary("/lol/cats/gem") }.to raise_error(ArgumentError)
   end
 
-  it "sets the gem_binary based on computing it from RbConfig" do
+  it "should set the gem_binary based on computing it from RbConfig" do
     expect(resource.gem_binary).to eql("#{RbConfig::CONFIG['bindir']}/gem")
   end
 
-  it "sets compile_time to false by default" do
+  it "should set compile_time to false by default" do
     expect(resource.compile_time).to be false
   end
 

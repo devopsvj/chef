@@ -60,12 +60,10 @@ class Chef
     #   options).
     #   @option options [Symbol] :name The name of this property.
     #   @option options [Class] :declared_in The class this property comes from.
-    #   @option options [String] :description A description of the property.
     #   @option options [Symbol] :instance_variable_name The instance variable
     #     tied to this property. Must include a leading `@`. Defaults to `@<name>`.
     #     `nil` means the property is opaque and not tied to a specific instance
     #     variable.
-    #   @option options [String] :introduced The release that introduced this property
     #   @option options [Boolean] :desired_state `true` if this property is part of desired
     #     state. Defaults to `true`.
     #   @option options [Boolean] :identity `true` if this property is part of object
@@ -101,7 +99,7 @@ class Chef
       if options.has_key?(:name_attribute)
         # If we have both name_attribute and name_property and they differ, raise an error
         if options.has_key?(:name_property)
-          raise ArgumentError, "name_attribute and name_property are functionally identical and both cannot be specified on a property at once. Use just one on property #{self}"
+          raise ArgumentError, "Cannot specify both name_property and name_attribute together on property #{self}."
         end
         # replace name_property with name_attribute in place
         options = Hash[options.map { |k, v| k == :name_attribute ? [ :name_property, v ] : [ k, v ] }]
@@ -109,7 +107,7 @@ class Chef
       end
 
       if options.has_key?(:default) && options.has_key?(:name_property)
-        raise ArgumentError, "A property cannot be both a name_property/name_attribute and have a default value. Use one or the other on property #{self}"
+        raise ArgumentError, "Cannot specify both default and name_property/name_attribute together on property #{self}"
       end
 
       # Recursively freeze the default if it isn't a lazy value.
@@ -157,24 +155,6 @@ class Chef
     #
     def declared_in
       options[:declared_in]
-    end
-
-    #
-    # A description of this property.
-    #
-    # @return [String]
-    #
-    def description
-      options[:description]
-    end
-
-    #
-    # When this property was introduced
-    #
-    # @return [String]
-    #
-    def introduced
-      options[:introduced]
     end
 
     #
@@ -272,7 +252,7 @@ class Chef
     #
     def validation_options
       @validation_options ||= options.reject do |k, v|
-        [:declared_in, :name, :instance_variable_name, :desired_state, :identity, :default, :name_property, :coerce, :required, :nillable, :sensitive, :description, :introduced].include?(k)
+        [:declared_in, :name, :instance_variable_name, :desired_state, :identity, :default, :name_property, :coerce, :required, :nillable, :sensitive].include?(k)
       end
     end
 
@@ -381,7 +361,7 @@ class Chef
       end
 
       if value.nil? && required?
-        raise Chef::Exceptions::ValidationFailed, "#{name} is a required property"
+        raise Chef::Exceptions::ValidationFailed, "#{name} is required"
       else
         value
       end
@@ -406,7 +386,7 @@ class Chef
       value = set_value(resource, input_to_stored_value(resource, value))
 
       if value.nil? && required?
-        raise Chef::Exceptions::ValidationFailed, "#{name} is a required property"
+        raise Chef::Exceptions::ValidationFailed, "#{name} is required"
       else
         value
       end
@@ -477,7 +457,7 @@ class Chef
     # options.
     #
     # @param resource [Chef::Resource] The resource we're validating against
-    #   (to provide context for the validation).
+    #   (to provide context for the validate).
     # @param value The value to validate.
     #
     # @raise Chef::Exceptions::ValidationFailed If the value is invalid for
@@ -534,18 +514,18 @@ class Chef
       # very confusing results.
       if property_redefines_method?
         resource_name = declared_in.respond_to?(:resource_name) ? declared_in.resource_name : declared_in
-        raise ArgumentError, "Property `#{name}` of resource `#{resource_name}` overwrites an existing method. A different name should be used for this property."
+        raise ArgumentError, "Property `#{name}` of resource `#{resource_name}` overwrites an existing method."
       end
 
       # We prefer this form because the property name won't show up in the
       # stack trace if you use `define_method`.
       declared_in.class_eval <<-EOM, __FILE__, __LINE__ + 1
         def #{name}(value=NOT_PASSED)
-          raise "Property `#{name}` of `\#{self}` was incorrectly passed a block. Possible property-resource collision. To call a resource named `#{name}` either rename the property or else use `declare_resource(:#{name}, ...)`" if block_given?
+          raise "Property `#{name}` of `\#{self}` was incorrectly passed a block.  Possible property-resource collision.  To call a resource named `#{name}` either rename the property or else use `declare_resource(:#{name}, ...)`" if block_given?
           self.class.properties[#{name.inspect}].call(self, value)
         end
         def #{name}=(value)
-          raise "Property `#{name}` of `\#{self}` was incorrectly passed a block. Possible property-resource collision. To call a resource named `#{name}` either rename the property or else use `declare_resource(:#{name}, ...)`" if block_given?
+          raise "Property `#{name}` of `\#{self}` was incorrectly passed a block.  Possible property-resource collision.  To call a resource named `#{name}` either rename the property or else use `declare_resource(:#{name}, ...)`" if block_given?
           self.class.properties[#{name.inspect}].set(self, value)
         end
       EOM

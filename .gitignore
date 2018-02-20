@@ -39,10 +39,8 @@ doc/
 Vagrantfile
 .vagrant/
 
-# Kitchen Tests lock files and chef data
+# Kitchen Tests Local Mode Data
 kitchen-tests/nodes/*
-kitchen-tests/Gemfile.lock
-kitchen-tests/Berksfile.lock
 
 # Temporary files present during spec runs
 spec/data/test-dir

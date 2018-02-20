@@ -71,18 +71,22 @@ class Chef
         end
 
         def package_locked(name, version)
+          islocked = false
           locked = shell_out_compact_timeout!("apt-mark", "showhold")
-          locked_packages = locked.stdout.each_line.map do |line|
-            line.strip
+          locked.stdout.each_line do |line|
+            line_package = line.strip
+            if line_package == name
+              islocked = true
+            end
           end
-          name.all? { |n| locked_packages.include? n }
+          islocked
         end
 
         def install_package(name, version)
           package_name = name.zip(version).map do |n, v|
             package_data[n][:virtual] ? n : "#{n}=#{v}"
           end
-          run_noninteractive("apt-get", "-q", "-y", config_file_options, default_release_options, options, "install", package_name)
+          run_noninteractive("apt-get", "-q", "-y", default_release_options, options, "install", package_name)
         end
 
         def upgrade_package(name, version)
@@ -123,22 +127,6 @@ class Chef
 
         private
 
-        # compare 2 versions to each other to see which is newer.
-        # this differs from the standard package method because we
-        # need to be able to parse debian version strings which contain
-        # tildes which Gem cannot properly parse
-        #
-        # @return [Integer] 1 if v1 > v2. 0 if they're equal. -1 if v1 < v2
-        def version_compare(v1, v2)
-          if !shell_out_compact_timeout("dpkg", "--compare-versions", v1.to_s, "gt", v2.to_s).error?
-            1
-          elsif !shell_out_compact_timeout("dpkg", "--compare-versions", v1.to_s, "eq", v2.to_s).error?
-            0
-          else
-            -1
-          end
-        end
-
         # Runs command via shell_out with magic environment to disable
         # interactive prompts. Command is run with default localization rather
         # than forcing locale to "C", so command output may not be stable.
@@ -150,20 +138,6 @@ class Chef
           # Use apt::Default-Release option only if provider supports it
           if new_resource.respond_to?(:default_release) && new_resource.default_release
             [ "-o", "APT::Default-Release=#{new_resource.default_release}" ]
-          end
-        end
-
-        def config_file_options
-          # If the user has specified config file options previously, respect those.
-          return if Array(options).any? { |opt| opt =~ /--force-conf/ }
-
-          # It doesn't make sense to install packages in a scenario that can
-          # result in a prompt. Have users decide up-front whether they want to
-          # forcibly overwrite the config file, otherwise preserve it.
-          if new_resource.overwrite_config_files
-            [ "-o", "Dpkg::Options::=--force-confnew" ]
-          else
-            [ "-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold" ]
           end
         end
 

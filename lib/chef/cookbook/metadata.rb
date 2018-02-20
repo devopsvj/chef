@@ -2,7 +2,7 @@
 # Author:: Adam Jacob (<adam@chef.io>)
 # Author:: AJ Christensen (<aj@chef.io>)
 # Author:: Seth Falcon (<seth@chef.io>)
-# Copyright:: Copyright 2008-2018, Chef Software Inc.
+# Copyright:: Copyright 2008-2017, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -74,6 +74,7 @@ class Chef
       attr_reader :providing
       attr_reader :attributes
       attr_reader :recipes
+      attr_reader :version
 
       # @return [Array<Gem::Dependency>] Array of supported Chef versions
       attr_reader :chef_versions
@@ -595,7 +596,7 @@ class Chef
       # Validates that the Ohai::VERSION of the running chef-client matches one of the
       # configured ohai_version statements in this cookbooks metadata.
       #
-      # @raise [Chef::Exceptions::CookbookOhaiVersionMismatch] if the cookbook fails validation
+      # @raises [Chef::Exceptions::CookbookOhaiVersionMismatch] if the cookbook fails validation
       def validate_ohai_version!
         unless gem_dep_matches?("ohai", Gem::Version.new(Ohai::VERSION), *ohai_versions)
           raise Exceptions::CookbookOhaiVersionMismatch.new(Ohai::VERSION, name, version, *ohai_versions)
@@ -605,7 +606,7 @@ class Chef
       # Validates that the Chef::VERSION of the running chef-client matches one of the
       # configured chef_version statements in this cookbooks metadata.
       #
-      # @raise [Chef::Exceptions::CookbookChefVersionMismatch] if the cookbook fails validation
+      # @raises [Chef::Exceptions::CookbookChefVersionMismatch] if the cookbook fails validation
       def validate_chef_version!
         unless gem_dep_matches?("chef", Gem::Version.new(Chef::VERSION), *chef_versions)
           raise Exceptions::CookbookChefVersionMismatch.new(Chef::VERSION, name, version, *chef_versions)

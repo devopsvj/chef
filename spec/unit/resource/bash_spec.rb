@@ -20,18 +20,21 @@ require "spec_helper"
 
 describe Chef::Resource::Bash do
 
-  let(:resource) { Chef::Resource::Bash.new("fakey_fakerton") }
-
-  it "is a subclass of Chef::Resource::Script" do
-    expect(resource).to be_a_kind_of(Chef::Resource::Script)
+  before(:each) do
+    @resource = Chef::Resource::Bash.new("fakey_fakerton")
   end
 
-  it "has a resource name of :bash" do
-    expect(resource.resource_name).to eql(:bash)
+  it "should create a new Chef::Resource::Bash" do
+    expect(@resource).to be_a_kind_of(Chef::Resource)
+    expect(@resource).to be_a_kind_of(Chef::Resource::Bash)
   end
 
-  it "has an interpreter of bash" do
-    expect(resource.interpreter).to eql("bash")
+  it "should have a resource name of :bash" do
+    expect(@resource.resource_name).to eql(:bash)
+  end
+
+  it "should have an interpreter of bash" do
+    expect(@resource.interpreter).to eql("bash")
   end
 
 end

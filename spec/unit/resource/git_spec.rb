@@ -28,20 +28,23 @@ describe Chef::Resource::Git do
     action: :sync
   )
 
-  let(:resource) { Chef::Resource::Git.new("my awesome webapp") }
+  before(:each) do
+    @git = Chef::Resource::Git.new("my awesome webapp")
+  end
 
-  it "is a subclass of Chef::Resource::Scm" do
-    expect(resource).to be_a_kind_of(Chef::Resource::Scm)
+  it "is a kind of Scm Resource" do
+    expect(@git).to be_a_kind_of(Chef::Resource::Scm)
+    expect(@git).to be_an_instance_of(Chef::Resource::Git)
   end
 
   it "uses aliases revision as branch" do
-    resource.branch "HEAD"
-    expect(resource.revision).to eql("HEAD")
+    @git.branch "HEAD"
+    expect(@git.revision).to eql("HEAD")
   end
 
   it "aliases revision as reference" do
-    resource.reference "v1.0 tag"
-    expect(resource.revision).to eql("v1.0 tag")
+    @git.reference "v1.0 tag"
+    expect(@git.revision).to eql("v1.0 tag")
   end
 
 end

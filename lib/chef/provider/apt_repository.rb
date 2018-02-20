@@ -19,6 +19,7 @@
 require "chef/resource"
 require "chef/dsl/declare_resource"
 require "chef/mixin/shell_out"
+require "chef/mixin/which"
 require "chef/http/simple"
 require "chef/provider/noop"
 
@@ -26,8 +27,11 @@ class Chef
   class Provider
     class AptRepository < Chef::Provider
       include Chef::Mixin::ShellOut
+      extend Chef::Mixin::Which
 
-      provides :apt_repository, platform_family: "debian"
+      provides :apt_repository do
+        which("apt-get")
+      end
 
       LIST_APT_KEYS = "apt-key list".freeze
       LIST_APT_KEY_FINGERPRINTS = "apt-key adv --list-public-keys --with-fingerprint --with-colons".freeze

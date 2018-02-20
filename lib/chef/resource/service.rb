@@ -22,7 +22,6 @@ require "shellwords"
 
 class Chef
   class Resource
-    # Use the service resource to manage a service.
     class Service < Chef::Resource
       identity_attr :service_name
 

@@ -20,55 +20,63 @@
 require "spec_helper"
 
 describe Chef::Resource::Directory do
-  let(:resource) { Chef::Resource::Directory.new("fakey_fakerton") }
 
-  it "has a name property" do
-    expect(resource.name).to eql("fakey_fakerton")
+  before(:each) do
+    @resource = Chef::Resource::Directory.new("fakey_fakerton")
   end
 
-  it "has a default action of 'create'" do
-    expect(resource.action).to eql([:create])
+  it "should create a new Chef::Resource::Directory" do
+    expect(@resource).to be_a_kind_of(Chef::Resource)
+    expect(@resource).to be_a_kind_of(Chef::Resource::Directory)
   end
 
-  it "accepts create or delete for action" do
-    expect { resource.action :create }.not_to raise_error
-    expect { resource.action :delete }.not_to raise_error
-    expect { resource.action :blues }.to raise_error(ArgumentError)
+  it "should have a name" do
+    expect(@resource.name).to eql("fakey_fakerton")
   end
 
-  it "uses the object name as the path by default" do
-    expect(resource.path).to eql("fakey_fakerton")
+  it "should have a default action of 'create'" do
+    expect(@resource.action).to eql([:create])
   end
 
-  it "accepts a string as the path" do
-    expect { resource.path "/tmp" }.not_to raise_error
-    expect(resource.path).to eql("/tmp")
-    expect { resource.path Hash.new }.to raise_error(ArgumentError)
+  it "should accept create or delete for action" do
+    expect { @resource.action :create }.not_to raise_error
+    expect { @resource.action :delete }.not_to raise_error
+    expect { @resource.action :blues }.to raise_error(ArgumentError)
   end
 
-  it "allows you to have specify whether the action is recursive with true/false" do
-    expect { resource.recursive true }.not_to raise_error
-    expect { resource.recursive false }.not_to raise_error
-    expect { resource.recursive "monkey" }.to raise_error(ArgumentError)
+  it "should use the object name as the path by default" do
+    expect(@resource.path).to eql("fakey_fakerton")
+  end
+
+  it "should accept a string as the path" do
+    expect { @resource.path "/tmp" }.not_to raise_error
+    expect(@resource.path).to eql("/tmp")
+    expect { @resource.path Hash.new }.to raise_error(ArgumentError)
+  end
+
+  it "should allow you to have specify whether the action is recursive with true/false" do
+    expect { @resource.recursive true }.not_to raise_error
+    expect { @resource.recursive false }.not_to raise_error
+    expect { @resource.recursive "monkey" }.to raise_error(ArgumentError)
   end
 
   describe "when it has group, mode, and owner" do
     before do
-      resource.path("/tmp/foo/bar/")
-      resource.group("wheel")
-      resource.mode("0664")
-      resource.owner("root")
+      @resource.path("/tmp/foo/bar/")
+      @resource.group("wheel")
+      @resource.mode("0664")
+      @resource.owner("root")
     end
 
     it "describes its state" do
-      state = resource.state_for_resource_reporter
+      state = @resource.state_for_resource_reporter
       expect(state[:group]).to eq("wheel")
       expect(state[:mode]).to eq("0664")
       expect(state[:owner]).to eq("root")
     end
 
     it "returns the directory path as its identity" do
-      expect(resource.identity).to eq("/tmp/foo/bar/")
+      expect(@resource.identity).to eq("/tmp/foo/bar/")
     end
   end
 end

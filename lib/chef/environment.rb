@@ -3,7 +3,7 @@
 # Author:: Seth Falcon (<seth@chef.io>)
 # Author:: John Keiser (<jkeiser@ospcode.com>)
 # Author:: Kyle Goodwin (<kgoodwin@primerevenue.com>)
-# Copyright:: Copyright 2010-2018, Chef Software Inc.
+# Copyright:: Copyright 2010-2016, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +33,8 @@ class Chef
 
     include Chef::Mixin::ParamsValidate
     include Chef::Mixin::FromFile
+
+    attr_accessor :chef_server_rest
 
     COMBINED_COOKBOOK_CONSTRAINT = /(.+)(?:[\s]+)((?:#{Chef::VersionConstraint::OPS.join('|')})(?:[\s]+).+)$/
 
@@ -295,7 +297,7 @@ class Chef
 
     def self.validate_cookbook_versions(cv)
       return false unless cv.kind_of?(Hash)
-      cv.each_value do |version|
+      cv.each do |cookbook, version|
         return false unless Chef::Environment.validate_cookbook_version(version)
       end
       true

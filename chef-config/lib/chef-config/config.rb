@@ -52,12 +52,6 @@ module ChefConfig
       configuration.inspect
     end
 
-    # given a *nix style config path return the platform specific path
-    # to that same config file
-    # @example client.pem path on Windows
-    #   platform_specific_path("/etc/chef/client.pem") #=> "C:\\chef\\client.pem"
-    # @param path [String] The unix path to convert to a platform specific path
-    # @return [String] a platform specific path
     def self.platform_specific_path(path)
       path = PathHelper.cleanpath(path)
       if ChefConfig.windows?
@@ -72,11 +66,6 @@ module ChefConfig
       path
     end
 
-    # the drive where Chef is installed on a windows host. This is determined
-    # either by the drive containing the current file or by the SYSTEMDRIVE ENV
-    # variable
-    #
-    # @return [String] the drive letter
     def self.windows_installation_drive
       if ChefConfig.windows?
         drive = File.expand_path(__FILE__).split("/", 2)[0]
@@ -260,7 +249,7 @@ module ChefConfig
     # Defaults to <chef_repo_path>/policies.
     default(:policy_path) { derive_path_from_chef_repo_path("policies") }
 
-    # Turn on "path sanity" by default.
+    # Turn on "path sanity" by default. See also: http://wiki.opscode.com/display/chef/User+Environment+PATH+Sanity
     default :enforce_path_sanity, false
 
     # Formatted Chef Client output is a beta feature, disabled by default:
@@ -603,12 +592,6 @@ module ChefConfig
     # If chef-zero is enabled, this defaults to nil (no authentication).
     default(:client_key) { chef_zero.enabled ? nil : platform_specific_path("/etc/chef/client.pem") }
 
-    # A credentials file may contain a complete client key, rather than the path
-    # to one.
-    #
-    # We'll use this preferentially.
-    default :client_key_contents, nil
-
     # When registering the client, should we allow the client key location to
     # be a symlink?  eg: /etc/chef/client.pem -> /etc/chef/prod-client.pem
     # If the path of the key goes through a directory like /tmp this should
@@ -648,7 +631,6 @@ module ChefConfig
     default(:validation_key) { chef_zero.enabled ? nil : platform_specific_path("/etc/chef/validation.pem") }
     default :validation_client_name, "chef-validator"
 
-    default :validation_key_contents, nil
     # When creating a new client via the validation_client account, Chef 11
     # servers allow the client to generate a key pair locally and send the
     # public key to the server. This is more secure and helps offload work from
@@ -708,9 +690,6 @@ module ChefConfig
     # Whether the resource count should be updated for log resource
     # on running chef-client
     default :count_log_resource_updates, true
-
-    # The selected profile when using credentials.
-    default :profile, nil
 
     # knife configuration data
     config_context :knife do

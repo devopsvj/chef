@@ -536,6 +536,11 @@ class Chef
     property :ignore_failure, [ TrueClass, FalseClass ], default: false, desired_state: false
 
     #
+    # Equivalent to #ignore_failure.
+    #
+    alias :epic_fail :ignore_failure
+
+    #
     # Make this resource into an exact (shallow) copy of the other resource.
     #
     # @param resource [Chef::Resource] The resource to copy from.
@@ -591,7 +596,7 @@ class Chef
         elsif remaining_retries > 0
           events.resource_failed_retriable(self, action, remaining_retries, e)
           remaining_retries -= 1
-          Chef::Log.info("Retrying execution of #{self}, #{remaining_retries} attempt#{"s" if remaining_retries > 1} left")
+          Chef::Log.info("Retrying execution of #{self}, #{remaining_retries} attempt(s) left")
           sleep retry_delay
           retry
         else
@@ -856,7 +861,7 @@ class Chef
     # @return [Array<Symbol>] The list of actions this Resource is allowed to
     #   have.
     #
-    attr_writer :allowed_actions
+    attr_accessor :allowed_actions
     def allowed_actions(value = NOT_PASSED)
       if value != NOT_PASSED
         self.allowed_actions = value
@@ -1174,8 +1179,8 @@ class Chef
     # Internal Resource Interface (for Chef)
     #
 
-    FORBIDDEN_IVARS = [:@run_context, :@not_if, :@only_if, :@enclosing_provider, :@description, :@introduced, :@examples, :@validation_message]
-    HIDDEN_IVARS = [:@allowed_actions, :@resource_name, :@source_line, :@run_context, :@name, :@not_if, :@only_if, :@elapsed_time, :@enclosing_provider, :@description, :@introduced, :@examples, :@validation_message]
+    FORBIDDEN_IVARS = [:@run_context, :@not_if, :@only_if, :@enclosing_provider]
+    HIDDEN_IVARS = [:@allowed_actions, :@resource_name, :@source_line, :@run_context, :@name, :@not_if, :@only_if, :@elapsed_time, :@enclosing_provider]
 
     include Chef::Mixin::ConvertToClassName
     extend Chef::Mixin::ConvertToClassName
@@ -1372,27 +1377,6 @@ class Chef
       else
         "dynamically defined"
       end
-    end
-
-    def self.description(description = "NOT_PASSED")
-      if description != "NOT_PASSED"
-        @description = description
-      end
-      @description
-    end
-
-    def self.introduced(introduced = "NOT_PASSED")
-      if introduced != "NOT_PASSED"
-        @introduced = introduced
-      end
-      @introduced
-    end
-
-    def self.examples(examples = "NOT_PASSED")
-      if examples != "NOT_PASSED"
-        @examples = examples
-      end
-      @examples
     end
 
     #

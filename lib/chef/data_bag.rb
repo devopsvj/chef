@@ -2,7 +2,7 @@
 # Author:: Adam Jacob (<adam@chef.io>)
 # Author:: Nuo Yan (<nuo@chef.io>)
 # Author:: Christopher Brown (<cb@chef.io>)
-# Copyright:: Copyright 2009-2018, Chef Software Inc.
+# Copyright:: Copyright 2009-2016, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,14 +33,12 @@ class Chef
     include Chef::Mixin::ParamsValidate
 
     VALID_NAME = /^[\.\-[:alnum:]_]+$/
-    RESERVED_NAMES = /^(node|role|environment|client)$/
+
+    attr_accessor :chef_server_rest
 
     def self.validate_name!(name)
       unless name =~ VALID_NAME
         raise Exceptions::InvalidDataBagName, "DataBags must have a name matching #{VALID_NAME.inspect}, you gave #{name.inspect}"
-      end
-      if name =~ RESERVED_NAMES
-        raise Exceptions::InvalidDataBagName, "DataBags may not have a name matching #{RESERVED_NAMES.inspect}, you gave #{name.inspect}"
       end
     end
 

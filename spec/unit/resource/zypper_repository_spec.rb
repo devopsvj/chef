@@ -24,43 +24,42 @@ describe Chef::Resource::ZypperRepository do
   let(:run_context) { Chef::RunContext.new(node, {}, events) }
   let(:resource) { Chef::Resource::ZypperRepository.new("repo-source", run_context) }
 
-  it "has a resource_name of :zypper_repository" do
-    expect(resource.resource_name).to eq(:zypper_repository)
-  end
-
-  it "repo_name is the name_property" do
-    expect(resource.repo_name).to eql("repo-source")
-  end
-
-  it "has a default action of create" do
-    expect(resource.action).to eql([:create])
-  end
-
-  it "supports all valid actions" do
-    expect { resource.action :add }.not_to raise_error
-    expect { resource.action :remove }.not_to raise_error
-    expect { resource.action :create }.not_to raise_error
-    expect { resource.action :refresh }.not_to raise_error
-    expect { resource.action :delete }.to raise_error(ArgumentError)
-  end
-
   context "on linux", :linux_only do
-    it "resolves to a Noop class when on non-linux OS" do
-      node.automatic[:os] = "windows"
-      node.automatic[:platform_family] = "windows"
+    it "should create a new Chef::Resource::ZypperRepository" do
+      expect(resource).to be_a_kind_of(Chef::Resource)
+      expect(resource).to be_a_kind_of(Chef::Resource::ZypperRepository)
+    end
+
+    it "should have a name of repo-source" do
+      expect(resource.name).to eql("repo-source")
+    end
+
+    it "should have a default action of create" do
+      expect(resource.action).to eql([:create])
+    end
+
+    it "supports all valid actions" do
+      expect { resource.action :add }.not_to raise_error
+      expect { resource.action :remove }.not_to raise_error
+      expect { resource.action :create }.not_to raise_error
+      expect { resource.action :refresh }.not_to raise_error
+      expect { resource.action :delete }.to raise_error(ArgumentError)
+    end
+
+    it "should resolve to a Noop class when zypper is not found" do
+      expect(Chef::Provider::ZypperRepository).to receive(:which).with("zypper").and_return(false)
       expect(resource.provider_for_action(:add)).to be_a(Chef::Provider::Noop)
     end
 
-    it "resolves to a Noop class when on non-suse linux" do
-      node.automatic[:os] = "linux"
-      node.automatic[:platform_family] = "debian"
-      expect(resource.provider_for_action(:add)).to be_a(Chef::Provider::Noop)
-    end
-
-    it "resolves to a ZypperRepository class when on a suse platform_family" do
-      node.automatic[:os] = "linux"
-      node.automatic[:platform_family] = "suse"
+    it "should resolve to a ZypperRepository class when zypper is found" do
+      expect(Chef::Provider::ZypperRepository).to receive(:which).with("zypper").and_return(true)
       expect(resource.provider_for_action(:add)).to be_a(Chef::Provider::ZypperRepository)
+    end
+  end
+
+  context "on windows", :windows_only do
+    it "should resolve to a NoOp provider" do
+      expect(resource.provider_for_action(:add)).to be_a(Chef::Provider::Noop)
     end
   end
 end

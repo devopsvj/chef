@@ -21,7 +21,6 @@ require "chef/resource"
 
 class Chef
   class Resource
-    # Use the mount resource to manage a mounted file system.
     class Mount < Chef::Resource
 
       identity_attr :device
@@ -34,8 +33,6 @@ class Chef
       # this is a poor API please do not re-use this pattern
       property :supports, Hash, default: lazy { { remount: false } },
                                 coerce: proc { |x| x.is_a?(Array) ? x.each_with_object({}) { |i, m| m[i] = true } : x }
-
-      property :password, String, sensitive: true
 
       def initialize(name, run_context = nil)
         super
@@ -149,6 +146,14 @@ class Chef
       def username(arg = nil)
         set_or_return(
           :username,
+          arg,
+          :kind_of => [ String ]
+        )
+      end
+
+      def password(arg = nil)
+        set_or_return(
+          :password,
           arg,
           :kind_of => [ String ]
         )

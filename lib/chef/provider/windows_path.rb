@@ -23,9 +23,8 @@ require "chef/exceptions"
 class Chef
   class Provider
     class WindowsPath < Chef::Provider
-      include Chef::Mixin::WindowsEnvHelper if Chef::Platform.windows?
 
-      provides :windows_path
+      include Chef::Mixin::WindowsEnvHelper if Chef::Platform.windows?
 
       def load_current_resource
         @current_resource = Chef::Resource::WindowsPath.new(new_resource.name)
@@ -38,10 +37,12 @@ class Chef
         # the PATH environment variable. Ruby expects these to be expanded.
         #
         path = expand_path(new_resource.path)
-        declare_resource(:env, "path") do
-          action :modify
-          delim ::File::PATH_SEPARATOR
-          value path.tr("/", '\\')
+        converge_by "Adding #{new_resource.path} to path environment variable" do
+          declare_resource(:env, "path") do
+            action :modify
+            delim ::File::PATH_SEPARATOR
+            value path.tr("/", '\\')
+          end
         end
       end
 

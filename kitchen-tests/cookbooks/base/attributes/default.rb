@@ -27,7 +27,7 @@ default["openssh"]["client"]["strict_host_key_checking"] = "no"
 default["openssh"]["client"]["protocol"] = "2"
 
 # it is mostly important that the aes*-ctr ciphers appear first in this list, the cbc ciphers are for compatibility
-default["openssh"]["server"]["ciphers"] = "aes256-ctr,aes192-ctr,aes128-ctr,aes256-cbc,aes192-cbc,aes128-cbc,3des-cbc"
+default["openssh"]["server"]["ciphers"] = "aes256-ctr,aes192-ctr,aes128-ctr,aes256-cbc,aes192-cbc,aes128-cbc,blowfish-cbc,3des-cbc,cast128-cbc"
 # DNS causes long timeouts when connecting clients have busted DNS
 default["openssh"]["server"]["use_dns"] = "no"
 default["openssh"]["server"]["syslog_facility"] = "AUTH"
@@ -43,6 +43,7 @@ default["openssh"]["server"]["challenge_response_authentication"] = "no"
 default["openssh"]["server"]["kerberos_authentication"] = "no"
 # tcp keepalives are useful to keep connections up through VPNs and firewalls
 default["openssh"]["server"]["tcp_keepalive"] = "yes"
+default["openssh"]["server"]["use_privilege_separation"] = "yes"
 default["openssh"]["server"]["max_start_ups"] = "10"
 # PAM (i think) already prints the motd on login
 default["openssh"]["server"]["print_motd"] = "no"
@@ -74,7 +75,6 @@ default["resolver"]["search"] = "chef.io"
 #
 
 default["authorization"]["sudo"]["passwordless"] = true
-default["authorization"]["sudo"]["groups"] = %w{sysadmin}
 default["authorization"]["sudo"]["users"] = %w{vagrant centos ubuntu}
 
 #

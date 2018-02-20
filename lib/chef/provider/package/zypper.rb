@@ -76,11 +76,15 @@ class Chef
         end
 
         def package_locked(name, version)
+          islocked = false
           locked = shell_out_compact_timeout!("zypper", "locks")
-          locked_packages = locked.stdout.each_line.map do |line|
-            line.split("|").shift(2).last.strip
+          locked.stdout.each_line do |line|
+            line_package = line.split("|").shift(2).last.strip
+            if line_package == name
+              islocked = true
+            end
           end
-          name.all? { |n| locked_packages.include? n }
+          islocked
         end
 
         def load_current_resource
@@ -99,7 +103,7 @@ class Chef
         end
 
         def install_package(name, version)
-          zypper_package("install", *options, "--auto-agree-with-licenses", allow_downgrade, name, version)
+          zypper_package("install", *options, "--auto-agree-with-licenses", name, version)
         end
 
         def upgrade_package(name, version)
@@ -142,10 +146,6 @@ class Chef
 
         def gpg_checks
           "--no-gpg-checks" unless new_resource.gpg_check
-        end
-
-        def allow_downgrade
-          "--oldpackage" if new_resource.allow_downgrade
         end
       end
     end

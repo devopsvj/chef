@@ -20,18 +20,21 @@ require "spec_helper"
 
 describe Chef::Resource::Ksh do
 
-  let(:resource) { Chef::Resource::Ksh.new("fakey_fakerton") }
-
-  it "is a subclass of Chef::Resource::Script" do
-    expect(resource).to be_a_kind_of(Chef::Resource::Script)
+  before(:each) do
+    @resource = Chef::Resource::Ksh.new("fakey_fakerton")
   end
 
-  it "has a resource name of :ksh" do
-    expect(resource.resource_name).to eql(:ksh)
+  it "should create a new Chef::Resource::Ksh" do
+    expect(@resource).to be_a_kind_of(Chef::Resource)
+    expect(@resource).to be_a_kind_of(Chef::Resource::Ksh)
   end
 
-  it "has an interpreter of ksh" do
-    expect(resource.interpreter).to eql("ksh")
+  it "should have a resource name of :ksh" do
+    expect(@resource.resource_name).to eql(:ksh)
+  end
+
+  it "should have an interpreter of ksh" do
+    expect(@resource.interpreter).to eql("ksh")
   end
 
 end

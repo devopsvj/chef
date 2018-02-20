@@ -22,9 +22,6 @@ require "chef/provider/execute"
 
 class Chef
   class Resource
-    # Use the execute resource to execute a single command. Commands that are executed with this resource are (by their
-    # nature) not idempotent, as they are typically unique to the environment in which they are run. Use not_if and only_if
-    # to guard this resource for idempotence.
     class Execute < Chef::Resource
 
       identity_attr :command
@@ -133,8 +130,7 @@ class Chef
 
       property :password, String, sensitive: true
 
-      # lazy used to set default value of sensitive to true if password is set
-      property :sensitive, [ TrueClass, FalseClass ], default: lazy { |r| r.password ? true : false }
+      property :sensitive, [ TrueClass, FalseClass ], default: false, coerce: proc { |x| password ? true : x }
 
       property :elevated, [ TrueClass, FalseClass ], default: false
 

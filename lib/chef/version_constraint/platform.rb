@@ -16,8 +16,6 @@
 require "chef/version_constraint"
 require "chef/version/platform"
 
-# NOTE: this is fairly badly broken for its purpose and should not be used
-#       unless it gets fixed.  see chef/version/platform.
 class Chef
   class VersionConstraint
     class Platform < Chef::VersionConstraint

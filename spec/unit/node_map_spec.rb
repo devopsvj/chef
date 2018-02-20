@@ -1,6 +1,6 @@
 #
 # Author:: Lamont Granquist (<lamont@chef.io>)
-# Copyright:: Copyright 2014-2018, Chef Software Inc.
+# Copyright:: Copyright 2014-2017, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,6 @@
 
 require "spec_helper"
 require "chef/node_map"
-
-class Foo; end
-class Bar; end
 
 describe Chef::NodeMap do
 
@@ -101,62 +98,6 @@ describe Chef::NodeMap do
       allow(node).to receive(:[]).with(:os).and_return("linux")
       allow(node).to receive(:[]).with(:platform_family).and_return("debian")
       expect(node_map.get(node, :thing)).to eql(nil)
-    end
-  end
-
-  describe "platform version checks" do
-    before do
-      node_map.set(:thing, :foo, platform_family: "rhel", platform_version: ">= 7")
-    end
-
-    it "handles non-x.y.z platform versions without throwing an exception" do
-      allow(node).to receive(:[]).with(:platform_family).and_return("rhel")
-      allow(node).to receive(:[]).with(:platform_version).and_return("7.19.2.2F")
-      expect(node_map.get(node, :thing)).to eql(:foo)
-    end
-
-    it "handles non-x.y.z platform versions without throwing an exception when the match fails" do
-      allow(node).to receive(:[]).with(:platform_family).and_return("rhel")
-      allow(node).to receive(:[]).with(:platform_version).and_return("4.19.2.2F")
-      expect(node_map.get(node, :thing)).to eql(nil)
-    end
-  end
-
-  describe "ordering classes" do
-    it "last writer wins when its reverse alphabetic order" do
-      node_map.set(:thing, Foo)
-      node_map.set(:thing, Bar)
-      expect(node_map.get(node, :thing)).to eql(Bar)
-    end
-
-    it "last writer wins when its alphabetic order" do
-      node_map.set(:thing, Bar)
-      node_map.set(:thing, Foo)
-      expect(node_map.get(node, :thing)).to eql(Foo)
-    end
-  end
-
-  describe "deleting classes" do
-    it "deletes a class and removes the mapping completely" do
-      node_map.set(:thing, Bar)
-      expect( node_map.delete_class(Bar) ).to eql({ :thing => [{ :klass => Bar }] })
-      expect( node_map.get(node, :thing) ).to eql(nil)
-    end
-
-    it "deletes a class and leaves the mapping that still has an entry" do
-      node_map.set(:thing, Bar)
-      node_map.set(:thing, Foo)
-      expect( node_map.delete_class(Bar) ).to eql({ :thing => [{ :klass => Bar }] })
-      expect( node_map.get(node, :thing) ).to eql(Foo)
-    end
-
-    it "handles deleting classes from multiple keys" do
-      node_map.set(:thing1, Bar)
-      node_map.set(:thing2, Bar)
-      node_map.set(:thing2, Foo)
-      expect( node_map.delete_class(Bar) ).to eql({ :thing1 => [{ :klass => Bar }], :thing2 => [{ :klass => Bar }] })
-      expect( node_map.get(node, :thing1) ).to eql(nil)
-      expect( node_map.get(node, :thing2) ).to eql(Foo)
     end
   end
 

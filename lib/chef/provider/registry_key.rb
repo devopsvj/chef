@@ -126,18 +126,12 @@ class Chef
               value[:data] = value[:data].to_i
             end
             unless current_value[:type] == value[:type] && current_value[:data] == value[:data]
-              converge_by_value = value
-              converge_by_value[:data] = "*sensitive value suppressed*" if new_resource.sensitive
-
-              converge_by("set value #{converge_by_value}") do
+              converge_by("set value #{value}") do
                 registry.set_value(new_resource.key, value)
               end
             end
           else
-            converge_by_value = value
-            converge_by_value[:data] = "*sensitive value suppressed*" if new_resource.sensitive
-
-            converge_by("set value #{converge_by_value}") do
+            converge_by("set value #{value}") do
               registry.set_value(new_resource.key, value)
             end
           end
@@ -152,10 +146,7 @@ class Chef
         end
         new_resource.unscrubbed_values.each do |value|
           unless @name_hash.has_key?(value[:name].downcase)
-            converge_by_value = value
-            converge_by_value[:data] = "*sensitive value suppressed*" if new_resource.sensitive
-
-            converge_by("create value #{converge_by_value}") do
+            converge_by("create value #{value}") do
               registry.set_value(new_resource.key, value)
             end
           end
@@ -166,10 +157,7 @@ class Chef
         if registry.key_exists?(new_resource.key)
           new_resource.unscrubbed_values.each do |value|
             if @name_hash.has_key?(value[:name].downcase)
-              converge_by_value = value
-              converge_by_value[:data] = "*sensitive value suppressed*" if new_resource.sensitive
-
-              converge_by("delete value #{converge_by_value}") do
+              converge_by("delete value #{value}") do
                 registry.delete_value(new_resource.key, value)
               end
             end

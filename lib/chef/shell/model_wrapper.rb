@@ -17,7 +17,7 @@
 #
 
 require "chef/mixin/convert_to_class_name"
-require "chef/dsl/data_query"
+require "chef/mixin/language"
 
 module Shell
   class ModelWrapper

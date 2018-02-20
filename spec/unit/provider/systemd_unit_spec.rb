@@ -1,6 +1,6 @@
 #
 # Author:: Nathan Williams (<nath.e.will@gmail.com>)
-# Copyright:: Copyright 2016-2018, Nathan Williams
+# Copyright:: Copyright (c), Nathan Williams
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,17 @@
 require "spec_helper"
 
 describe Chef::Provider::SystemdUnit do
+  let(:node) do
+    Chef::Node.new.tap do |n|
+      n.default["etc"] = {}
+      n.default["etc"]["passwd"] = {
+        "joe" => {
+          "uid" => 1_000,
+        },
+      }
+    end
+  end
 
-  let(:node) { Chef::Node.new }
   let(:events) { Chef::EventDispatch::Dispatcher.new }
   let(:run_context) { Chef::RunContext.new(node, {}, events) }
   let(:unit_name) { "sysstat-collect\\x2d.timer" }
@@ -74,7 +83,6 @@ describe Chef::Provider::SystemdUnit do
   end
 
   before(:each) do
-    allow(Etc).to receive(:getpwuid).and_return(OpenStruct.new(uid: 1000))
     allow(Chef::Resource::SystemdUnit).to receive(:new)
                                             .with(unit_name)
                                             .and_return(current_resource)
@@ -250,7 +258,7 @@ describe Chef::Provider::SystemdUnit do
                              .and_return(systemctl_path)
       end
 
-      describe "creates/deletes/presets/reverts the unit" do
+      describe "creates/deletes the unit" do
         it "creates the unit file when it does not exist" do
           allow(provider).to receive(:manage_unit_file)
                                .with(:create)
@@ -345,22 +353,6 @@ describe Chef::Provider::SystemdUnit do
             expect(provider).to_not receive(:manage_unit_file)
             provider.action_delete
           end
-
-          it "presets the unit" do
-            new_resource.user("joe")
-            expect(provider).to receive(:shell_out_with_systems_locale!)
-                                  .with("#{systemctl_path} --user preset #{unit_name_escaped}", user_cmd_opts)
-                                  .and_return(shell_out_success)
-            provider.action_preset
-          end
-
-          it "reverts the unit" do
-            new_resource.user("joe")
-            expect(provider).to receive(:shell_out_with_systems_locale!)
-                                  .with("#{systemctl_path} --user revert #{unit_name_escaped}", user_cmd_opts)
-                                  .and_return(shell_out_success)
-            provider.action_revert
-          end
         end
 
         context "when no user is specified" do
@@ -384,33 +376,11 @@ describe Chef::Provider::SystemdUnit do
             expect(provider).to_not receive(:manage_unit_file)
             provider.action_delete
           end
-
-          it "presets the unit" do
-            expect(provider).to receive(:shell_out_with_systems_locale!)
-                                  .with("#{systemctl_path} --system preset #{unit_name_escaped}", {})
-                                  .and_return(shell_out_success)
-            provider.action_preset
-          end
-
-          it "reverts the unit" do
-            expect(provider).to receive(:shell_out_with_systems_locale!)
-                                  .with("#{systemctl_path} --system revert #{unit_name_escaped}", {})
-                                  .and_return(shell_out_success)
-            provider.action_revert
-          end
         end
       end
 
-      describe "enables/disables/reenables the unit" do
+      describe "enables/disables the unit" do
         context "when a user is specified" do
-          it "reenables the unit" do
-            current_resource.user(user_name)
-            expect(provider).to receive(:shell_out_with_systems_locale!)
-                                  .with("#{systemctl_path} --user reenable #{unit_name_escaped}", user_cmd_opts)
-                                  .and_return(shell_out_success)
-            provider.action_reenable
-          end
-
           it "enables the unit when it is disabled" do
             current_resource.user(user_name)
             current_resource.enabled(false)
@@ -459,13 +429,6 @@ describe Chef::Provider::SystemdUnit do
         end
 
         context "when no user is specified" do
-          it "reenables the unit" do
-            expect(provider).to receive(:shell_out_with_systems_locale!)
-                                  .with("#{systemctl_path} --system reenable #{unit_name_escaped}", {})
-                                  .and_return(shell_out_success)
-            provider.action_reenable
-          end
-
           it "enables the unit when it is disabled" do
             current_resource.enabled(false)
             expect(provider).to receive(:shell_out_with_systems_locale!)

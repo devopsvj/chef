@@ -3,7 +3,7 @@
 # Author:: Christopher Walters (<cw@chef.io>)
 # Author:: Christopher Brown (<cb@chef.io>)
 # Author:: Tim Hinderliter (<tim@chef.io>)
-# Copyright:: Copyright 2008-2018, Chef Software Inc.
+# Copyright:: Copyright 2008-2017, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,6 +98,14 @@ class Chef
     # @return [Chef::ServerAPI]
     #
     attr_reader :rest
+
+    #
+    # A rest object with validate_utf8 set to false.  This will not throw exceptions
+    # on non-UTF8 strings in JSON but will sanitize them so that e.g. POSTs will
+    # never fail.  Cannot be configured on a request-by-request basis, so we carry
+    # around another rest object for it.
+    #
+    attr_reader :rest_clean
 
     #
     # The runner used to converge.
@@ -291,7 +299,7 @@ class Chef
         run_status.stop_clock
         Chef::Log.info("Chef Run complete in #{run_status.elapsed_time} seconds")
         run_completed_successfully
-        events.run_completed(node, run_status)
+        events.run_completed(node)
 
         # keep this inside the main loop to get exception backtraces
         end_profiling
@@ -307,7 +315,7 @@ class Chef
           run_status.exception = run_error
           run_failed
         end
-        events.run_failed(run_error, run_status)
+        events.run_failed(run_error)
       ensure
         Chef::RequestID.instance.reset_request_id
         @run_status = nil
@@ -390,10 +398,8 @@ class Chef
       end
     end
 
-    # A rest object with validate_utf8 set to false.  This will not throw exceptions
-    # on non-UTF8 strings in JSON but will sanitize them so that e.g. POSTs will
-    # never fail.  Cannot be configured on a request-by-request basis, so we carry
-    # around another rest object for it.
+    # Rest client for use by API reporters.  This rest client will not fail with an exception if
+    # it is fed non-UTF8 data.
     #
     # @api private
     def rest_clean(client_name = node_name, config = Chef::Config)
@@ -596,12 +602,9 @@ class Chef
     # @api private
     #
     def run_ohai
-      filter = Chef::Config[:minimal_ohai] ? %w{fqdn machinename hostname platform platform_version ohai_time os os_version} : nil
+      filter = Chef::Config[:minimal_ohai] ? %w{fqdn machinename hostname platform platform_version os os_version} : nil
       ohai.all_plugins(filter)
       events.ohai_completed(node)
-    rescue Ohai::Exceptions::CriticalPluginFailure => e
-      Chef::Log.error("Critical Ohai plugins failed: #{e.message}")
-      exit(false)
     end
 
     #

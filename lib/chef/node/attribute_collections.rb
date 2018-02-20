@@ -1,6 +1,6 @@
 #--
 # Author:: Daniel DeLeo (<dan@chef.io>)
-# Copyright:: Copyright 2012-2018, Chef Software Inc.
+# Copyright:: Copyright 2012-2017, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,13 +63,13 @@ class Chef
       MUTATOR_METHODS.each do |mutator|
         define_method(mutator) do |*args, &block|
           ret = super(*args, &block)
-          send_reset_cache(__path__)
+          send_reset_cache
           ret
         end
       end
 
       def delete(key, &block)
-        send_reset_cache(__path__)
+        send_reset_cache(__path__, key)
         super
       end
 
@@ -92,7 +92,6 @@ class Chef
       private
 
       def convert_value(value)
-        value.ensure_generated_cache! if value.respond_to?(:ensure_generated_cache!)
         case value
         when VividMash
           value
@@ -148,13 +147,13 @@ class Chef
       # object.
 
       def delete(key, &block)
-        send_reset_cache(__path__)
+        send_reset_cache(__path__, key)
         super
       end
 
       MUTATOR_METHODS.each do |mutator|
         define_method(mutator) do |*args, &block|
-          send_reset_cache(__path__)
+          send_reset_cache
           super(*args, &block)
         end
       end
@@ -175,8 +174,8 @@ class Chef
 
       def []=(key, value)
         ret = super
-        send_reset_cache(__path__)
-        ret # rubocop:disable Lint/Void
+        send_reset_cache(__path__, key)
+        ret
       end
 
       alias :attribute? :has_key?
@@ -190,7 +189,6 @@ class Chef
       # AttrArray for consistency and to ensure that the added parts of the
       # attribute tree will have the correct cache invalidation behavior.
       def convert_value(value)
-        value.ensure_generated_cache! if value.respond_to?(:ensure_generated_cache!)
         case value
         when VividMash
           value

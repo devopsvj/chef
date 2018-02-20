@@ -31,12 +31,8 @@ describe Chef::Resource::AptPackage, "initialize" do
 
   let(:resource) { Chef::Resource::AptPackage.new("foo") }
 
-  it "supports default_release" do
+  it "should support default_release" do
     resource.default_release("lenny-backports")
     expect(resource.default_release).to eql("lenny-backports")
-  end
-
-  it "should preserve configuration files by default" do
-    expect(resource.overwrite_config_files).to eql(false)
   end
 end

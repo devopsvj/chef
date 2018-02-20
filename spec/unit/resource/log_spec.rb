@@ -21,44 +21,53 @@ require "spec_helper"
 
 describe Chef::Resource::Log do
 
-  let(:log_str) { "this is my string to log" }
-  let(:resource) { Chef::Resource::Log.new(log_str) }
+  before(:each) do
+    @log_str = "this is my string to log"
+    @resource = Chef::Resource::Log.new(@log_str)
+  end
+
+  it "should create a new Chef::Resource::Log" do
+    expect(@resource).to be_a_kind_of(Chef::Resource)
+    expect(@resource).to be_a_kind_of(Chef::Resource::Log)
+  end
 
   it "supports the :write actions" do
-    expect(resource.allowed_actions).to include(:write)
+    expect(@resource.allowed_actions).to include(:write)
   end
 
-  it "has a name of log" do
-    expect(resource.resource_name).to eq(:log)
+  it "should have a name of log" do
+    expect(@resource.resource_name).to eq(:log)
   end
 
-  it "allows you to set a log string" do
-    expect(resource.name).to eq(log_str)
+  it "should allow you to set a log string" do
+    expect(@resource.name).to eq(@log_str)
   end
 
-  it "sets the message to the first argument to new" do
-    expect(resource.message).to eq(log_str)
+  it "should set the message to the first argument to new" do
+    expect(@resource.message).to eq(@log_str)
   end
 
-  it "accepts a string for the log message" do
-    resource.message "this is different"
-    expect(resource.message).to eq("this is different")
+  it "should accept a string for the log message" do
+    @resource.message "this is different"
+    expect(@resource.message).to eq("this is different")
   end
 
-  it "accepts a vaild level option" do
-    resource.level :debug
-    resource.level :info
-    resource.level :warn
-    resource.level :error
-    resource.level :fatal
-    expect { resource.level :unsupported }.to raise_error(ArgumentError)
+  it "should accept a vaild level option" do
+    @resource.level :debug
+    @resource.level :info
+    @resource.level :warn
+    @resource.level :error
+    @resource.level :fatal
+    expect { @resource.level :unsupported }.to raise_error(ArgumentError)
   end
 
   describe "when the identity is defined" do
-    let(:resource) { Chef::Resource::Log.new("ery day I'm loggin-in") }
+    before do
+      @resource = Chef::Resource::Log.new("ery day I'm loggin-in")
+    end
 
     it "returns the log string as its identity" do
-      expect(resource.identity).to eq("ery day I'm loggin-in")
+      expect(@resource.identity).to eq("ery day I'm loggin-in")
     end
   end
 end

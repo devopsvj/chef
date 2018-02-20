@@ -1,7 +1,7 @@
 #
 # Author:: Adam Jacob (<adam@chef.io>)
 # Author:: Seth Chisamore (<schisamo@chef.io>)
-# Copyright:: Copyright 2008-2018, Chef Software Inc.
+# Copyright:: Copyright 2008-2016 Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,6 @@ require "pathname"
 
 class Chef
   class Resource
-    # Use the file resource to manage files directly on a node.
     class File < Chef::Resource
       include Chef::Mixin::Securable
 
@@ -44,7 +43,7 @@ class Chef
       # mutate the new_resource.checksum which would change the
       # user intent in the new_resource if the resource is reused.
       #
-      # @return [String] Checksum of the file we actually rendered
+      # @returns [String] Checksum of the file we actually rendered
       attr_accessor :final_checksum
 
       default_action :create

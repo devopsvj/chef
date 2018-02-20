@@ -95,7 +95,7 @@ class Chef
 
       ##
       # Determine if the user has specified an appropriate secret for encrypting data bag items.
-      # @return boolean
+      # @returns boolean
       def base_encryption_secret_provided?(need_encrypt_flag = true)
         validate_secrets
 

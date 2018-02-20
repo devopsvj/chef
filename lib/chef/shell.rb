@@ -41,6 +41,7 @@ module Shell
   LEADERS[Chef::Node]   = ":attributes"
 
   class << self
+    attr_accessor :client_type
     attr_accessor :options
     attr_accessor :env
     attr_writer   :editor

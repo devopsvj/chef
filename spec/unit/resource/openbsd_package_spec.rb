@@ -20,24 +20,28 @@
 #
 
 require "spec_helper"
+require "ostruct"
 
 describe Chef::Resource::OpenbsdPackage do
-  let(:node) { Chef::Node.new }
-  let(:events) { Chef::EventDispatch::Dispatcher.new }
-  let(:run_context) { Chef::RunContext.new(node, {}, events) }
-  let(:resource) { Chef::Resource::OpenbsdPackage.new("foo", run_context) }
+
+  before(:each) do
+    @node = Chef::Node.new
+    @events = Chef::EventDispatch::Dispatcher.new
+    @run_context = Chef::RunContext.new(@node, {}, @events)
+    @resource = Chef::Resource::OpenbsdPackage.new("foo", @run_context)
+  end
 
   describe "Initialization" do
-    it "is a subclass of Chef::Resource::Package" do
-      expect(resource).to be_a_kind_of(Chef::Resource::Package)
+    it "should return a Chef::Resource::OpenbsdPackage" do
+      expect(@resource).to be_a_kind_of(Chef::Resource::OpenbsdPackage)
     end
 
-    it "sets the resource_name to :openbsd_package" do
-      expect(resource.resource_name).to eql(:openbsd_package)
+    it "should set the resource_name to :openbsd_package" do
+      expect(@resource.resource_name).to eql(:openbsd_package)
     end
 
-    it "does not set the provider" do
-      expect(resource.provider).to be_nil
+    it "should not set the provider" do
+      expect(@resource.provider).to be_nil
     end
   end
 

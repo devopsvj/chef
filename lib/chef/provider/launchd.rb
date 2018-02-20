@@ -17,6 +17,7 @@
 #
 
 require "chef/provider"
+require "chef/resource/launchd"
 require "chef/resource/file"
 require "chef/resource/cookbook_file"
 require "chef/resource/macosx_service"

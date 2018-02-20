@@ -5,7 +5,7 @@
 # Author:: Christopher Brown (<cb@chef.io>)
 # Author:: Christopher Walters (<cw@chef.io>)
 # Author:: Daniel DeLeo (<dan@chef.io>)
-# Copyright:: Copyright 2009-2018, Chef Software Inc.
+# Copyright:: Copyright 2009-2017, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -170,10 +170,11 @@ class Chef
       raise
     end
 
-    def streaming_request_with_progress(path, headers = {}, tempfile = nil, &progress_block)
+    def streaming_request_with_progress(path, headers = {}, &progress_block)
       http_attempts ||= 0
       url = create_url(path)
       response, rest_request, return_value = nil, nil, nil
+      tempfile = nil
       data = nil
 
       method = :GET
@@ -181,7 +182,7 @@ class Chef
 
       response, rest_request, return_value = send_http_request(method, url, processed_headers, data) do |http_response|
         if http_response.kind_of?(Net::HTTPSuccess)
-          tempfile = stream_to_tempfile(url, http_response, tempfile, &progress_block)
+          tempfile = stream_to_tempfile(url, http_response, &progress_block)
         end
         apply_stream_complete_middleware(http_response, rest_request, return_value)
       end
@@ -216,10 +217,11 @@ class Chef
     #
     # @yield [tempfile] block to process the tempfile
     # @yieldparams [tempfile<Tempfile>] tempfile
-    def streaming_request(path, headers = {}, tempfile = nil)
+    def streaming_request(path, headers = {})
       http_attempts ||= 0
       url = create_url(path)
       response, rest_request, return_value = nil, nil, nil
+      tempfile = nil
       data = nil
 
       method = :GET
@@ -227,7 +229,7 @@ class Chef
 
       response, rest_request, return_value = send_http_request(method, url, processed_headers, data) do |http_response|
         if http_response.kind_of?(Net::HTTPSuccess)
-          tempfile = stream_to_tempfile(url, http_response, tempfile)
+          tempfile = stream_to_tempfile(url, http_response)
         end
         apply_stream_complete_middleware(http_response, rest_request, return_value)
       end
@@ -498,13 +500,11 @@ class Chef
     end
 
     # @api private
-    def stream_to_tempfile(url, response, tf = nil, &progress_block)
+    def stream_to_tempfile(url, response, &progress_block)
       content_length = response["Content-Length"]
-      if tf.nil?
-        tf = Tempfile.open("chef-rest")
-        if Chef::Platform.windows?
-          tf.binmode # required for binary files on Windows platforms
-        end
+      tf = Tempfile.open("chef-rest")
+      if Chef::Platform.windows?
+        tf.binmode # required for binary files on Windows platforms
       end
       Chef::Log.debug("Streaming download from #{url} to tempfile #{tf.path}")
       # Stolen from http://www.ruby-forum.com/topic/166423

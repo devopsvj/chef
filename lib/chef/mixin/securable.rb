@@ -59,14 +59,17 @@ class Chef
         )
       end
 
+      #==WindowsMacros
       # Defines methods for adding attributes to a chef resource to describe
       # Windows file security metadata.
       #
       # This module is meant to be used to extend a class (instead of
       # `include`-ing). A class is automatically extended with this module when
       # it includes WindowsSecurableAttributes.
-      # @todo should this be separated into different files?
+      # --
+      # TODO should this be separated into different files?
       module WindowsMacros
+        # === rights_attribute
         # "meta-method" for dynamically creating rights attributes on resources.
         #
         # Multiple rights attributes can be declared. This enables resources to
@@ -159,6 +162,7 @@ class Chef
         end
       end
 
+      #==WindowsSecurableAttributes
       # Defines #inherits to describe Windows file security ACLs on the
       # including class
       module WindowsSecurableAttributes

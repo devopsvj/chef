@@ -21,7 +21,16 @@ require "spec_helper"
 
 describe Chef::Provider::Service::Systemd do
 
-  let(:node) { Chef::Node.new }
+  let(:node) do
+    node = Chef::Node.new
+    node.default["etc"] = Hash.new
+    node.default["etc"]["passwd"] = {
+      "joe" => {
+        "uid" => 10000,
+      },
+    }
+    node
+  end
 
   let(:events) { Chef::EventDispatch::Dispatcher.new }
 
@@ -47,7 +56,6 @@ describe Chef::Provider::Service::Systemd do
 
   before(:each) do
     allow(Chef::Resource::Service).to receive(:new).with(service_name).and_return(current_resource)
-    allow(Etc).to receive(:getpwuid).and_return(OpenStruct.new(uid: 10000))
   end
 
   describe "load_current_resource" do

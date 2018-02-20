@@ -1,6 +1,6 @@
 #
 # Author:: Lamont Granquist (<lamont@chef.io>)
-# Copyright:: Copyright 2014-2018, Chef Software Inc.
+# Copyright:: Copyright 2014-2017, Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,25 +16,6 @@
 # limitations under the License.
 #
 
-#
-# example of a NodeMap entry for the user resource (as typed on the DSL):
-#
-#  :user=>
-#  [{:klass=>Chef::Resource::User::AixUser, :os=>"aix"},
-#   {:klass=>Chef::Resource::User::DsclUser, :os=>"darwin"},
-#   {:klass=>Chef::Resource::User::PwUser, :os=>"freebsd"},
-#   {:klass=>Chef::Resource::User::LinuxUser, :os=>"linux"},
-#   {:klass=>Chef::Resource::User::SolarisUser,
-#    :os=>["omnios", "solaris2"]},
-#   {:klass=>Chef::Resource::User::WindowsUser, :os=>"windows"}],
-#
-# the entries in the array are pre-sorted into priority order (blocks/platform_version/platform/platform_family/os/none) so that
-# the first entry's :klass that matches the filter is returned when doing a get.
-#
-# note that as this examples show filter values may be a scalar string or an array of scalar strings.
-#
-# XXX: confusingly, in the *_priority_map the :klass may be an array of Strings of class names
-#
 class Chef
   class NodeMap
 
@@ -50,12 +31,13 @@ class Chef
     #
     # @return [NodeMap] Returns self for possible chaining
     #
-    def set(key, klass, platform: nil, platform_version: nil, platform_family: nil, os: nil, canonical: nil, override: nil, &block)
-      new_matcher = { klass: klass }
-      new_matcher[:platform] = platform if platform
-      new_matcher[:platform_version] = platform_version if platform_version
-      new_matcher[:platform_family] = platform_family if platform_family
-      new_matcher[:os] = os if os
+    def set(key, value, platform: nil, platform_version: nil, platform_family: nil, os: nil, canonical: nil, override: nil, &block)
+      filters = {}
+      filters[:platform] = platform if platform
+      filters[:platform_version] = platform_version if platform_version
+      filters[:platform_family] = platform_family if platform_family
+      filters[:os] = os if os
+      new_matcher = { value: value, filters: filters }
       new_matcher[:block] = block if block
       new_matcher[:canonical] = canonical if canonical
       new_matcher[:override] = override if override
@@ -66,10 +48,7 @@ class Chef
       map[key] ||= []
       map[key].each_with_index do |matcher, index|
         cmp = compare_matchers(key, new_matcher, matcher)
-        if cmp && cmp <= 0
-          insert_at = index
-          break
-        end
+        insert_at ||= index if cmp && cmp <= 0
       end
       if insert_at
         map[key].insert(insert_at, new_matcher)
@@ -89,14 +68,11 @@ class Chef
     # @param canonical [Boolean] `true` or `false` to match canonical or
     #   non-canonical values only. `nil` to ignore canonicality.  Default: `nil`
     #
-    # @return [Object] Class
+    # @return [Object] Value
     #
     def get(node, key, canonical: nil)
-      return nil unless map.has_key?(key)
-      map[key].map do |matcher|
-        return matcher[:klass] if node_matches?(node, matcher) && canonical_matches?(canonical, matcher)
-      end
-      nil
+      raise ArgumentError, "first argument must be a Chef::Node" unless node.is_a?(Chef::Node) || node.nil?
+      list(node, key, canonical: canonical).first
     end
 
     #
@@ -109,48 +85,23 @@ class Chef
     # @param canonical [Boolean] `true` or `false` to match canonical or
     #   non-canonical values only. `nil` to ignore canonicality.  Default: `nil`
     #
-    # @return [Object] Class
+    # @return [Object] Value
     #
     def list(node, key, canonical: nil)
+      raise ArgumentError, "first argument must be a Chef::Node" unless node.is_a?(Chef::Node) || node.nil?
       return [] unless map.has_key?(key)
       map[key].select do |matcher|
         node_matches?(node, matcher) && canonical_matches?(canonical, matcher)
-      end.map { |matcher| matcher[:klass] }
-    end
-
-    # Remove a class from all its matchers in the node_map, will remove mappings completely if its the last matcher left
-    #
-    # Note that this leaks the internal structure out a bit, but the main consumer of this (poise/halite) cares only about
-    # the keys in the returned Hash.
-    #
-    # @param klass [Class] the class to seek and destroy
-    #
-    # @return [Hash] deleted entries in the same format as the @map
-    def delete_class(klass)
-      raise "please use a Class type for the klass argument" unless klass.is_a?(Class)
-      deleted = {}
-      map.each do |key, matchers|
-        deleted_matchers = []
-        matchers.delete_if do |matcher|
-          # because matcher[:klass] may be a string (which needs to die), coerce both to strings to compare somewhat canonically
-          if matcher[:klass].to_s == klass.to_s
-            deleted_matchers << matcher
-            true
-          end
-        end
-        deleted[key] = deleted_matchers unless deleted_matchers.empty?
-        map.delete(key) if matchers.empty?
-      end
-      deleted
+      end.map { |matcher| matcher[:value] }
     end
 
     # Seriously, don't use this, it's nearly certain to change on you
     # @return remaining
     # @api private
-    def delete_canonical(key, klass)
+    def delete_canonical(key, value)
       remaining = map[key]
       if remaining
-        remaining.delete_if { |matcher| matcher[:canonical] && Array(matcher[:klass]) == Array(klass) }
+        remaining.delete_if { |matcher| matcher[:canonical] && Array(matcher[:value]) == Array(value) }
         if remaining.empty?
           map.delete(key)
           remaining = nil
@@ -192,7 +143,7 @@ class Chef
 
       filter_values.empty? ||
         Array(filter_values).any? do |v|
-          Gem::Requirement.new(v).satisfied_by?(Gem::Version.new(value))
+          Chef::VersionConstraint::Platform.new(v).include?(value)
         end
     end
 
@@ -210,7 +161,7 @@ class Chef
 
     def node_matches?(node, matcher)
       return true if !node
-      filters_match?(node, matcher) && block_matches?(node, matcher[:block])
+      filters_match?(node, matcher[:filters]) && block_matches?(node, matcher[:block])
     end
 
     def canonical_matches?(canonical, matcher)
@@ -218,40 +169,63 @@ class Chef
       !!canonical == !!matcher[:canonical]
     end
 
-    #
-    # "provides" lines with identical filters sort by class name (ascending).
-    #
-    def compare_matchers(key, new_matcher, matcher)
-      cmp = compare_matcher_properties(new_matcher[:block], matcher[:block])
+    # @api private
+    def dispatch_compare_matchers(key, new_matcher, matcher)
+      cmp = compare_matcher_properties(new_matcher, matcher) { |m| m[:block] }
       return cmp if cmp != 0
-      cmp = compare_matcher_properties(new_matcher[:platform_version], matcher[:platform_version])
+      cmp = compare_matcher_properties(new_matcher, matcher) { |m| m[:filters][:platform_version] }
       return cmp if cmp != 0
-      cmp = compare_matcher_properties(new_matcher[:platform], matcher[:platform])
+      cmp = compare_matcher_properties(new_matcher, matcher) { |m| m[:filters][:platform] }
       return cmp if cmp != 0
-      cmp = compare_matcher_properties(new_matcher[:platform_family], matcher[:platform_family])
+      cmp = compare_matcher_properties(new_matcher, matcher) { |m| m[:filters][:platform_family] }
       return cmp if cmp != 0
-      cmp = compare_matcher_properties(new_matcher[:os], matcher[:os])
+      cmp = compare_matcher_properties(new_matcher, matcher) { |m| m[:filters][:os] }
       return cmp if cmp != 0
-      cmp = compare_matcher_properties(new_matcher[:override], matcher[:override])
+      cmp = compare_matcher_properties(new_matcher, matcher) { |m| m[:override] }
       return cmp if cmp != 0
       # If all things are identical, return 0
       0
     end
 
-    def compare_matcher_properties(a, b)
-      # falsity comparisons here handle both "nil" and "false"
-      return 1 if !a && b
-      return -1 if !b && a
-      return 0 if !a && !b
+    #
+    # "provides" lines with identical filters sort by class name (ascending).
+    #
+    def compare_matchers(key, new_matcher, matcher)
+      cmp = dispatch_compare_matchers(key, new_matcher, matcher)
+      if cmp == 0
+        # Sort by class name (ascending) as well, if all other properties
+        # are exactly equal
+        if new_matcher[:value].is_a?(Class) && !new_matcher[:override]
+          cmp = compare_matcher_properties(new_matcher, matcher) { |m| m[:value].name }
+        end
+      end
+      cmp
+    end
 
-      # Check for blacklists ('!windows'). Those always come *after* positive
+    def compare_matcher_properties(new_matcher, matcher)
+      a = yield(new_matcher)
+      b = yield(matcher)
+
+      # Check for blcacklists ('!windows'). Those always come *after* positive
       # whitelists.
       a_negated = Array(a).any? { |f| f.is_a?(String) && f.start_with?("!") }
       b_negated = Array(b).any? { |f| f.is_a?(String) && f.start_with?("!") }
-      return 1 if a_negated && !b_negated
-      return -1 if b_negated && !a_negated
+      if a_negated != b_negated
+        return 1 if a_negated
+        return -1 if b_negated
+      end
 
-      a <=> b
+      # We treat false / true and nil / not-nil with the same comparison
+      a = nil if a == false
+      b = nil if b == false
+      cmp = a <=> b
+      # This is the case where one is non-nil, and one is nil. The one that is
+      # nil is "greater" (i.e. it should come last).
+      if cmp.nil?
+        return 1 if a.nil?
+        return -1 if b.nil?
+      end
+      cmp
     end
 
     def map

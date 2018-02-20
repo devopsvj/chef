@@ -35,18 +35,13 @@ class Chef
         use_multipackage_api
         use_package_name_for_source
 
-        # all rhel variants >= 8 will use DNF
-        provides :package, platform_family: "rhel", platform_version: ">= 8"
-
-        # fedora >= 22 uses DNF
-        provides :package, platform: "fedora", platform_version: ">= 22"
-
-        # amazon will eventually use DNF
-        provides :package, platform: "amazon" do
-          which("dnf")
+        provides :package, platform_family: %w{fedora amazon} do
+          which("dnf") && shell_out("rpm -q dnf").stdout =~ /^dnf-[1-9]/
         end
 
-        provides :dnf_package
+        provides :package, platform_family: %w{rhel}, platform_version: ">= 8"
+
+        provides :dnf_package, os: "linux"
 
         #
         # Most of the magic in this class happens in the python helper script.  The ruby side of this
@@ -131,10 +126,6 @@ class Chef
           end
         end
 
-        def version_compare(v1, v2)
-          python_helper.compare_versions(v1, v2)
-        end
-
         # @returns Array<Version>
         def available_version(index)
           @available_version ||= []
@@ -148,7 +139,7 @@ class Chef
           @available_version[index]
         end
 
-        # @return [Array<Version>]
+        # @returns Array<Version>
         def installed_version(index)
           @installed_version ||= []
           @installed_version[index] ||= if new_resource.source

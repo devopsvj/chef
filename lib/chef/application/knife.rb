@@ -148,10 +148,6 @@ class Chef::Application::Knife < Chef::Application
     :boolean      => true,
     :default      => nil
 
-  option :profile,
-    :long         => "--profile PROFILE",
-    :description  => "The credentials profile to select"
-
   # Run knife
   def run
     Mixlib::Log::Formatter.show_time = false

@@ -1,5 +1,5 @@
 #
-# Cookbook:: base
+# Cookbook:: webapp
 # Recipe:: tests
 #
 # Copyright:: 2014-2017, Chef Software, Inc.

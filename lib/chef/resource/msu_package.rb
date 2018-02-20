@@ -21,25 +21,26 @@ require "chef/mixin/uris"
 
 class Chef
   class Resource
-    # Use the msu_package resource to install Microsoft Update(MSU) packages on Microsoft Windows machines.
-    #
-    # @since 12.17
     class MsuPackage < Chef::Resource::Package
       include Chef::Mixin::Uris
 
-      resource_name :msu_package
       provides :msu_package, os: "windows"
 
       allowed_actions :install, :remove
-      default_action :install
+
+      def initialize(name, run_context = nil)
+        super
+        @resource_name = :msu_package
+        @source = name
+        @action = :install
+      end
 
       property :source, String,
                 coerce: (proc do |s|
                   unless s.nil?
                     uri_scheme?(s) ? s : Chef::Util::PathHelper.canonical_path(s, false)
                   end
-                end),
-                default: lazy { |r| r.package_name }
+                end)
       property :checksum, String, desired_state: false
     end
   end

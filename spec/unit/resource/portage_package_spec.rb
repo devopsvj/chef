@@ -16,21 +16,23 @@
 # limitations under the License.
 #
 
-require "spec_helper"
+require File.expand_path(File.join(File.dirname(__FILE__), "..", "..", "spec_helper"))
 
 describe Chef::Resource::PortagePackage, "initialize" do
 
-  let(:resource) { Chef::Resource::PortagePackage.new("foo") }
-
-  it "is a subclass of Chef::Resource::Package" do
-    expect(resource).to be_a_kind_of(Chef::Resource::Package)
+  before(:each) do
+    @resource = Chef::Resource::PortagePackage.new("foo")
   end
 
-  it "sets the resource_name to :portage_package" do
-    expect(resource.resource_name).to eql(:portage_package)
+  it "should return a Chef::Resource::PortagePackage" do
+    expect(@resource).to be_a_kind_of(Chef::Resource::PortagePackage)
   end
 
-  it "sets the provider to Chef::Provider::Package::Portage" do
-    expect(resource.provider).to eql(Chef::Provider::Package::Portage)
+  it "should set the resource_name to :portage_package" do
+    expect(@resource.resource_name).to eql(:portage_package)
+  end
+
+  it "should set the provider to Chef::Provider::Package::Portage" do
+    expect(@resource.provider).to eql(Chef::Provider::Package::Portage)
   end
 end

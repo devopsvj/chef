@@ -31,7 +31,7 @@ class Chef
           super
           @init_command   = "/usr/sbin/svcadm"
           @status_command = "/bin/svcs"
-          @maintenance    = false
+          @maintenace     = false
         end
 
         def load_current_resource
@@ -54,8 +54,6 @@ class Chef
         end
 
         def enable_service
-          # Running service status to update maintenance status to invoke svcadm clear
-          service_status
           shell_out!(default_init_command, "clear", @new_resource.service_name) if @maintenance
           enable_flags = [ "-s", @new_resource.options ].flatten.compact
           shell_out!(default_init_command, "enable", *enable_flags, @new_resource.service_name)
@@ -95,9 +93,6 @@ class Chef
           # dependency   require_all/error svc:/milestone/multi-user:default (online)
           # $
 
-          # Set the default value for maintenance
-          @maintenance = false
-
           # load output into hash
           status = {}
           cmd.stdout.each_line do |line|
@@ -106,6 +101,7 @@ class Chef
           end
 
           # check service state
+          @maintenance = false
           case status["state"]
           when "online"
             @current_resource.enabled(true)

@@ -1,4 +1,4 @@
-# Documentation available at https://expeditor-docs.es.chef.io/
+# Documentation available at http://http://expeditor-docs.es.chef.io/
 
 # The name of the product keys for this product (from mixlib-install)
 product_key:
@@ -14,9 +14,6 @@ slack:
 rubygems:
   - chef
   - chef-config
-
-docker_images:
-  - chef
 
 github:
   # The file where the MAJOR.MINOR.PATCH version is kept. The version in this file
@@ -34,31 +31,23 @@ github:
   # for building.
   release_branch:
     - master:
-        version_constraint: 14.*
-    - chef-13:
-        version_constraint: 13.*
+        version_constraint: ~> 13.0
     - chef-12:
-        version_constraint: 12.*
+        version_constraint: ~> 12.0
 
 # These actions are taken, in order they are specified, anytime a Pull Request is merged.
 merge_actions:
   - built_in:bump_version:
       ignore_labels:
         - "Version: Skip Bump"
-        - "Expeditor: Skip Version Bump"
-        - "Expeditor: Skip All"
   - bash:.expeditor/update_version.sh:
       only_if: built_in:bump_version
   - built_in:update_changelog:
       ignore_labels:
         - "Meta: Exclude From Changelog"
-        - "Expeditor: Exclude From Changelog"
-        - "Expeditor: Skip All"
   - built_in:trigger_omnibus_release_build:
       ignore_labels:
         - "Omnibus: Skip Build"
-        - "Expeditor: Skip Build"
-        - "Expeditor: Skip All"
       only_if: built_in:bump_version
 
 # These actions are taken, in the order specified, when an Omnibus artifact is promoted

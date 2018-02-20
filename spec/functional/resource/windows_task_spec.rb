@@ -31,30 +31,20 @@ describe Chef::Resource::WindowsTask, :windows_only do
 
   describe "action :create" do
     after { delete_task }
+
     context "when frequency and frequency_modifier are not passed" do
       subject do
         new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
         new_resource.command task_name
-        # Make sure MM/DD/YYYY is accepted
-        new_resource.start_day "09/20/2017"
         new_resource
       end
 
-      it "creates a scheduled task to run every 1 hr starting on 09/20/2017" do
+      it "creates a scheduled task to run every 1 hr" do
         subject.run_action(:create)
         task_details = windows_task_provider.send(:load_task_hash, task_name)
         expect(task_details[:TaskName]).to eq("\\chef-client")
         expect(task_details[:TaskToRun]).to eq("chef-client")
         expect(task_details[:"Repeat:Every"]).to eq("1 Hour(s), 0 Minute(s)")
-
-        # This test will not work across locales
-        expect(task_details[:StartDate]).to eq("9/20/2017")
-      end
-
-      it "does not converge the resource if it is already converged" do
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
       end
     end
 
@@ -76,12 +66,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
         expect(task_details[:"Repeat:Every"]).to eq("0 Hour(s), 15 Minute(s)")
         expect(task_details[:run_level]).to eq("HighestAvailable")
       end
-
-      it "does not converge the resource if it is already converged" do
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
     end
 
     context "frequency :hourly" do
@@ -101,12 +85,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
         expect(task_details[:TaskToRun]).to eq("chef-client")
         expect(task_details[:"Repeat:Every"]).to eq("3 Hour(s), 0 Minute(s)")
         expect(task_details[:run_level]).to eq("HighestAvailable")
-      end
-
-      it "does not converge the resource if it is already converged" do
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
       end
     end
 
@@ -128,12 +106,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
         expect(task_details[:Days]).to eq("Every 1 day(s)")
         expect(task_details[:run_level]).to eq("HighestAvailable")
       end
-
-      it "does not converge the resource if it is already converged" do
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
     end
 
     context "frequency :monthly" do
@@ -154,13 +126,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
         expect(task_details[:ScheduleType]).to eq("Monthly")
         expect(task_details[:Months]).to eq("FEB, APR, JUN, AUG, OCT, DEC")
         expect(task_details[:run_level]).to eq("HighestAvailable")
-      end
-
-      it "does not converge the resource if it is already converged" do
-        skip "This functionality needs to be handle"
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
       end
     end
 
@@ -190,73 +155,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
           expect(task_details[:StartTime]).to eq("5:00:00 PM")
           expect(task_details[:run_level]).to eq("HighestAvailable")
         end
-
-        it "does not converge the resource if it is already converged" do
-          subject.start_time "17:00"
-          subject.run_action(:create)
-          subject.run_action(:create)
-          expect(subject).not_to be_updated_by_last_action
-        end
-      end
-    end
-
-    context "frequency :none" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :none
-        new_resource
-      end
-
-      it "creates the scheduled task to run on demand only" do
-        subject.run_action(:create)
-        task_details = windows_task_provider.send(:load_task_hash, task_name)
-
-        expect(task_details[:TaskName]).to eq("\\chef-client")
-        expect(task_details[:TaskToRun]).to eq("chef-client")
-        expect(task_details[:ScheduleType]).to eq("On demand only")
-        expect(task_details[:StartTime]).to eq("N/A")
-        expect(task_details[:StartDate]).to eq("N/A")
-        expect(task_details[:NextRunTime]).to eq("N/A")
-        expect(task_details[:none]).to eq(true)
-        expect(task_details[:run_level]).to eq("HighestAvailable")
-      end
-
-      it "does not converge the resource if it is already converged" do
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-    end
-
-    context "frequency :onstart" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :onstart
-        new_resource
-      end
-
-      it "creates the scheduled task to run at system start up" do
-        subject.run_action(:create)
-        task_details = windows_task_provider.send(:load_task_hash, task_name)
-
-        expect(task_details[:TaskName]).to eq("\\chef-client")
-        expect(task_details[:TaskToRun]).to eq("chef-client")
-        expect(task_details[:ScheduleType]).to eq("At system start up")
-        expect(task_details[:StartTime]).to eq("N/A")
-        expect(task_details[:StartDate]).to eq("N/A")
-        expect(task_details[:NextRunTime]).to eq("N/A")
-        expect(task_details[:onstart]).to eq(true)
-        expect(task_details[:run_level]).to eq("HighestAvailable")
-      end
-
-      it "does not converge the resource if it is already converged" do
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
       end
     end
 
@@ -279,13 +177,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
         expect(task_details[:run_level]).to eq("HighestAvailable")
       end
 
-      it "does not converge the resource if it is already converged" do
-        skip "This functionality needs to be handle"
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-
       context "when days are provided" do
         it "creates the scheduled task to run on particular days" do
           subject.day "Mon, Fri"
@@ -298,14 +189,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
           expect(task_details[:ScheduleType]).to eq("Weekly")
           expect(task_details[:Months]).to eq("Every 2 week(s)")
           expect(task_details[:run_level]).to eq("HighestAvailable")
-        end
-
-        it "does not converge the resource if it is already converged" do
-          subject.day "Mon, Fri"
-          subject.frequency_modifier 2
-          subject.run_action(:create)
-          subject.run_action(:create)
-          expect(subject).not_to be_updated_by_last_action
         end
       end
 
@@ -341,12 +224,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
         expect(task_details[:ScheduleType]).to eq("At logon time")
         expect(task_details[:run_level]).to eq("HighestAvailable")
       end
-
-      it "does not converge the resource if it is already converged" do
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
     end
 
     context "frequency :on_idle" do
@@ -375,13 +252,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
           expect(task_details[:run_level]).to eq("HighestAvailable")
           expect(task_details[:idle_time]).to eq("PT20M")
         end
-
-        it "does not converge the resource if it is already converged" do
-          subject.idle_time 20
-          subject.run_action(:create)
-          subject.run_action(:create)
-          expect(subject).not_to be_updated_by_last_action
-        end
       end
     end
 
@@ -405,210 +275,16 @@ describe Chef::Resource::WindowsTask, :windows_only do
         expect(task_details[:random_delay]).to eq("PT20M")
       end
 
-      it "does not converge the resource if it is already converged" do
-        subject.frequency :minute
-        subject.random_delay "PT20M"
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-
       it "raises error if invalid random_delay is passed" do
         subject.frequency :minute
         subject.random_delay "abc"
-        expect { subject.after_created }.to raise_error("Invalid value passed for `random_delay`. Please pass seconds as an Integer (e.g. 60) or a String with numeric values only (e.g. '60').")
+        expect { subject.after_created }.to raise_error("Invalid value passed for `random_delay`. Please pass seconds as a String e.g. '60'.")
       end
 
       it "raises error if random_delay is passed with frequency on_idle" do
         subject.frequency :on_idle
         subject.random_delay "PT20M"
         expect { subject.after_created }.to raise_error("`random_delay` property is supported only for frequency :minute, :hourly, :daily, :weekly and :monthly")
-      end
-    end
-  end
-
-  describe "Examples of idempotent checks for each frequency" do
-    after { delete_task }
-    context "For frequency :once" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :once
-        new_resource.start_time "17:00"
-        new_resource
-      end
-
-      it "create task by adding frequency_modifier as 1" do
-        subject.frequency_modifier 1
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-
-      it "create task by adding frequency_modifier as 5" do
-        skip "This functionality needs to be handle"
-        subject.frequency_modifier 5
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-    end
-
-    context "For frequency :none" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :none
-        new_resource
-      end
-
-      it "create task by adding frequency_modifier as 1" do
-        subject.frequency_modifier 1
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-
-      it "create task by adding frequency_modifier as 5" do
-        skip "This functionality needs to be handle"
-        subject.frequency_modifier 5
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-    end
-
-    context "For frequency :weekly" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :weekly
-        new_resource
-      end
-
-      it "create task by adding start_day" do
-        skip "This functionality needs to be handle"
-        subject.start_day "12/28/2018"
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-
-      it "create task by adding frequency_modifier and random_delay" do
-        skip "This functionality needs to be handle"
-        subject.frequency_modifier 3
-        subject.random_delay "60"
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-    end
-
-    context "For frequency :monthly" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :once
-        new_resource.start_time "17:00"
-        new_resource
-      end
-
-      it "create task by adding frequency_modifier as 1" do
-        subject.frequency_modifier 1
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-
-      it "create task by adding frequency_modifier as 5" do
-        skip "This functionality needs to be handle"
-        subject.frequency_modifier 5
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-    end
-
-    context "For frequency :hourly" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :hourly
-        new_resource.frequency_modifier 5
-        new_resource.random_delay "2400"
-        new_resource
-      end
-
-      it "create task by adding frequency_modifier and random_delay" do
-        skip "This functionality needs to be handle"
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-    end
-
-    context "For frequency :daily" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :daily
-        new_resource.frequency_modifier 2
-        new_resource.random_delay "2400"
-        new_resource
-      end
-
-      it "create task by adding frequency_modifier and random_delay" do
-        skip "This functionality needs to be handle"
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-    end
-
-    context "For frequency :on_logon" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.frequency :on_logon
-        new_resource
-      end
-
-      it "create task by adding frequency_modifier and random_delay" do
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-
-      it "create task by adding frequency_modifier as 5" do
-        skip "This functionality needs to be handle"
-        subject.frequency_modifier 5
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
-      end
-    end
-
-    context "For frequency :onstart" do
-      subject do
-        new_resource = Chef::Resource::WindowsTask.new(task_name, run_context)
-        new_resource.command task_name
-        new_resource.run_level :highest
-        new_resource.frequency :onstart
-        new_resource.frequency_modifier 20
-        new_resource
-      end
-
-      it "create task by adding frequency_modifier as 20" do
-        skip "This functionality needs to be handle"
-        subject.run_action(:create)
-        subject.run_action(:create)
-        expect(subject).not_to be_updated_by_last_action
       end
     end
   end
@@ -624,7 +300,7 @@ describe Chef::Resource::WindowsTask, :windows_only do
     context "when start_day is passed with frequency :onstart" do
       it "raises error" do
         subject.frequency :onstart
-        subject.start_day "09/20/2017"
+        subject.start_day "mon"
         expect { subject.after_created }.to raise_error("`start_day` property is not supported with frequency: onstart")
       end
     end
@@ -633,7 +309,7 @@ describe Chef::Resource::WindowsTask, :windows_only do
       it "raises error" do
         subject.user "Administrator"
         subject.frequency :onstart
-        expect { subject.after_created }.to raise_error(%q{Cannot specify a user other than the system users without specifying a password!. Valid passwordless users: 'NT AUTHORITY\SYSTEM', 'SYSTEM', 'NT AUTHORITY\LOCALSERVICE', 'NT AUTHORITY\NETWORKSERVICE', 'BUILTIN\USERS', 'USERS'})
+        expect { subject.after_created }.to raise_error("Can't specify a non-system user without a password!")
       end
     end
 
@@ -649,7 +325,7 @@ describe Chef::Resource::WindowsTask, :windows_only do
       it "raises error" do
         subject.frequency_modifier 1450
         subject.frequency :minute
-        expect { subject.after_created }.to raise_error("frequency_modifier value 1450 is invalid. Valid values for :minute frequency are 1 - 1439.")
+        expect { subject.after_created }.to raise_error("frequency_modifier value 1450 is invalid.  Valid values for :minute frequency are 1 - 1439.")
       end
     end
 
@@ -657,7 +333,7 @@ describe Chef::Resource::WindowsTask, :windows_only do
       it "raises error" do
         subject.months "xyz"
         subject.frequency :monthly
-        expect { subject.after_created }.to raise_error("months property invalid. Only valid values are: JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC and *. Multiple values must be separated by a comma.")
+        expect { subject.after_created }.to raise_error("months attribute invalid. Only valid values are: JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC and *. Multiple values must be separated by a comma.")
       end
     end
 
@@ -665,7 +341,7 @@ describe Chef::Resource::WindowsTask, :windows_only do
       it "raises error" do
         subject.idle_time 1000
         subject.frequency :on_idle
-        expect { subject.after_created }.to raise_error("idle_time value 1000 is invalid. Valid values for :on_idle frequency are 1 - 999.")
+        expect { subject.after_created }.to raise_error("idle_time value 1000 is invalid.  Valid values for :on_idle frequency are 1 - 999.")
       end
     end
 
@@ -673,7 +349,7 @@ describe Chef::Resource::WindowsTask, :windows_only do
       it "raises error" do
         subject.idle_time 300
         subject.frequency :monthly
-        expect { subject.after_created }.to raise_error("idle_time property is only valid for tasks that run on_idle")
+        expect { subject.after_created }.to raise_error("idle_time attribute is only valid for tasks that run on_idle")
       end
     end
   end
@@ -690,13 +366,6 @@ describe Chef::Resource::WindowsTask, :windows_only do
       delete_task
       task_details = windows_task_provider.send(:load_task_hash, task_name)
       expect(task_details).to eq(false)
-    end
-
-    it "does not converge the resource if it is already converged" do
-      subject.run_action(:create)
-      subject.run_action(:delete)
-      subject.run_action(:delete)
-      expect(subject).not_to be_updated_by_last_action
     end
   end
 

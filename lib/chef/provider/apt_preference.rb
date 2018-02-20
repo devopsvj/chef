@@ -19,12 +19,17 @@
 require "chef/provider"
 require "chef/dsl/declare_resource"
 require "chef/provider/noop"
+require "chef/mixin/which"
 require "chef/log"
 
 class Chef
   class Provider
     class AptPreference < Chef::Provider
-      provides :apt_preference, platform_family: "debian"
+      extend Chef::Mixin::Which
+
+      provides :apt_preference do
+        which("apt-get")
+      end
 
       APT_PREFERENCE_DIR = "/etc/apt/preferences.d".freeze
 

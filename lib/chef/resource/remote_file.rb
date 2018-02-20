@@ -25,8 +25,6 @@ require "chef/mixin/uris"
 
 class Chef
   class Resource
-    # Use the remote_file resource to transfer a file from a remote location using file specificity. This resource is
-    # similar to the file resource.
     class RemoteFile < Chef::Resource::File
       include Chef::Mixin::Securable
 
@@ -138,8 +136,6 @@ class Chef
       property :remote_domain, String
 
       property :remote_password, String, sensitive: true
-
-      property :authentication, equal_to: [:remote, :local], default: :remote
 
       def after_created
         validate_identity_platform(remote_user, remote_password, remote_domain)

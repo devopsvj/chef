@@ -21,11 +21,6 @@ require "chef/mixin/shell_out"
 
 class Chef
   class Resource
-    # Use the dnf_package resource to install, upgrade, and remove packages with DNF for Fedora platforms. The dnf_package
-    # resource is able to resolve provides data for packages much like DNF can do when it is run from the command line.
-    # This allows a variety of options for installing packages, like minimum versions, virtual provides, and library names.
-    #
-    # @since 12.18
     class DnfPackage < Chef::Resource::Package
       extend Chef::Mixin::Which
       extend Chef::Mixin::ShellOut
@@ -34,15 +29,8 @@ class Chef
 
       allowed_actions :install, :upgrade, :remove, :purge, :reconfig, :lock, :unlock, :flush_cache
 
-      # all rhel variants >= 8 will use DNF
-      provides :package, platform_family: "rhel", platform_version: ">= 8"
-
-      # fedora >= 22 uses DNF
-      provides :package, platform: "fedora", platform_version: ">= 22"
-
-      # amazon will eventually use DNF
-      provides :package, platform: "amazon" do
-        which("dnf")
+      provides :package, platform_family: %w{rhel fedora amazon} do
+        which("dnf") && shell_out("rpm -q dnf").stdout =~ /^dnf-[1-9]/
       end
 
       provides :dnf_package

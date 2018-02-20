@@ -33,7 +33,7 @@ describe Chef::Provider::RemoteFile::NetworkFile do
     let(:source_file) { double("::File", :read => nil) }
 
     before do
-      allow(Chef::Platform).to receive(:windows?).and_return(true)
+      allow(fetcher).to receive(:node).and_return({ "platform_family" => "windows" })
     end
 
     it "stages the local file to a temporary file" do

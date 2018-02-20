@@ -91,16 +91,12 @@ class Chef
           search_args[:filter_result] = create_result_filter(config[:filter_result])
         elsif (not ui.config[:attribute].nil?) && (not ui.config[:attribute].empty?)
           search_args[:filter_result] = create_result_filter_from_attributes(ui.config[:attribute])
-        elsif config[:id_only]
-          search_args[:filter_result] = create_result_filter_from_attributes([])
         end
 
         begin
           q.search(@type, @query, search_args) do |item|
             formatted_item = Hash.new
-            if config[:id_only]
-              formatted_item = format_for_display({ "id" => item["__display_name"] })
-            elsif item.is_a?(Hash)
+            if item.is_a?(Hash)
               # doing a little magic here to set the correct name
               formatted_item[item["__display_name"]] = item.reject { |k| k == "__display_name" }
             else

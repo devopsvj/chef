@@ -1,5 +1,5 @@
 #
-# Cookbook:: base
+# Cookbook:: webapp
 # Recipe:: default
 #
 # Copyright:: 2014-2017, Chef Software, Inc.
@@ -7,11 +7,12 @@
 
 hostname "chef-travis-ci.chef.io"
 
-apt_update
+if node["platform_family"] == "debian"
+  include_recipe "ubuntu"
+  apt_update "packages"
+end
 
-include_recipe "ubuntu" if platform?("ubuntu")
-
-if platform_family?("rhel", "fedora", "amazon")
+if %w{rhel fedora}.include?(node["platform_family"])
   include_recipe "selinux::disabled"
 end
 
@@ -22,7 +23,7 @@ yum_repository "epel" do
   gpgkey "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-#{node['platform_version'].to_i}"
   gpgcheck true
   mirrorlist "https://mirrors.fedoraproject.org/metalink?repo=epel-#{node['platform_version'].to_i}&arch=$basearch"
-  only_if { platform_family?("rhel") }
+  only_if { node["platform_family"] == "rhel" && node["platform"] != "amazon" }
 end
 
 include_recipe "build-essential"
@@ -33,10 +34,7 @@ include_recipe "ntp"
 
 include_recipe "resolver"
 
-users_manage "sysadmin" do
-  group_id 2300
-  action [:create]
-end
+include_recipe "users::sysadmins"
 
 include_recipe "sudo"
 
@@ -44,34 +42,13 @@ include_recipe "chef-client::delete_validation"
 include_recipe "chef-client::config"
 include_recipe "chef-client"
 
+# hack needed for debian-7 on docker
+directory "/var/run/sshd"
+
 include_recipe "openssh"
 
 include_recipe "nscd"
 
 include_recipe "logrotate"
-
-include_recipe "cron"
-
-include_recipe "git"
-
-directory "/etc/ssl"
-
-# Generate new key and certificate
-openssl_dhparam "/etc/ssl/dhparam.pem" do
-  key_length 1024
-  action :create
-end
-
-# Generate new key with aes-128-cbc cipher
-openssl_rsa_private_key "/etc/ssl/rsakey_aes128cbc.pem" do
-  key_length 1024
-  key_cipher "aes-128-cbc"
-  action :create
-end
-
-openssl_rsa_public_key "/etc/ssl/rsakey_aes128cbc.pub" do
-  private_key_path "/etc/ssl/rsakey_aes128cbc.pem"
-  action :create
-end
 
 include_recipe "::tests"

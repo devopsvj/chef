@@ -52,7 +52,7 @@ begin
 
   def components(list, cmp)
     out = ""
-    cmp.each_value do |v|
+    cmp.each do |k, v|
       out << "\n#### #{v['title'].gsub('#', '\\#')}\n"
       out << cbgb(list, v["cbgb"])
     end
