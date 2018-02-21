@@ -7,7 +7,7 @@ dist: trusty
 before_install:
   - gem update --system $(grep rubygems omnibus_overrides.rb | cut -d'"' -f2)
   - gem --version
-  - rvm @global do gem uninstall bundler -a -x
+  - rvm @global do gem uninstall bundler -a -x || true
   - gem install bundler -v $(grep bundler omnibus_overrides.rb | cut -d'"' -f2)
   - bundle --version
   - rm -f .bundle/config
@@ -33,12 +33,12 @@ matrix:
   include:
   - rvm: 2.3.3
     sudo: true
-    script: sudo -E $(which bundle) exec rake unit;
+    script: sudo -E $(which bundle) exec rake spec:unit;
     # also remove integration / external tests
     bundler_args: --without ci docgen guard integration maintenance omnibus_package --frozen
   - rvm: 2.4.1
     sudo: true
-    script: sudo -E $(which bundle) exec rake unit;
+    script: sudo -E $(which bundle) exec rake sped:unit;
     # also remove integration / external tests
     bundler_args: --without ci docgen guard integration maintenance omnibus_package --frozen
 
